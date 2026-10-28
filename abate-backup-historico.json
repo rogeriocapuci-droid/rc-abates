@@ -1,0 +1,491 @@
+{
+ "app": "abate",
+ "versao": 1,
+ "exportado": "2026-10-28",
+ "recs": {
+  "gjwt71odmvr1q038": {
+   "data": "2026-10-28",
+   "frigorifico": "JBS- Nova Andradina",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "cur": [
+      "13",
+      "",
+      ""
+     ],
+     "id": "ac3venf1mvr1q038",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": true
+     },
+     "pc": "5.611,8",
+     "pcm": "total",
+     "pe": "",
+     "pf": "10.515",
+     "prec": "",
+     "qtd": "18",
+     "rend": "53",
+     "sf": "",
+     "si": ""
+    },
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "vaca",
+     "cur": [
+      "19",
+      "",
+      ""
+     ],
+     "id": "x5fow00fmvr1t086",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": true
+     },
+     "pc": "4.509,5",
+     "pcm": "total",
+     "pe": "",
+     "pf": "9.050",
+     "prec": "",
+     "qtd": "18",
+     "rend": "49",
+     "sf": "562",
+     "si": "545"
+    },
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "cur": [
+      "18",
+      "",
+      ""
+     ],
+     "id": "86jur05kmvr1wupp",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": true
+     },
+     "pc": "9.725",
+     "pcm": "total",
+     "pe": "",
+     "pf": "18.320",
+     "prec": "",
+     "qtd": "36",
+     "rend": "52",
+     "sf": "526",
+     "si": "491"
+    }
+   ],
+   "obs": "",
+   "pecuarista": "Jose Oliveira Gerra",
+   "ts": 1793127342068,
+   "id": "gjwt71odmvr1q038"
+  },
+  "hf25z005mvr1z45e": {
+   "data": "2026-10-28",
+   "frigorifico": "JBS- Nova Andradina",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "vaca",
+     "cur": [
+      "14",
+      "",
+      ""
+     ],
+     "id": "lpecmmg9mvr1z45e",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": true
+     },
+     "pc": "8.803,5",
+     "pcm": "total",
+     "pe": "",
+     "pf": "18.195",
+     "prec": "",
+     "qtd": "36",
+     "rend": "49",
+     "sf": "598",
+     "si": "563"
+    }
+   ],
+   "obs": "",
+   "pecuarista": "Agropecuaria Guerra",
+   "ts": 1793127767234,
+   "id": "hf25z005mvr1z45e"
+  },
+  "n8przhw0mv12h2yn": {
+   "data": "2026-10-09",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "id": "wuxrftktmv12h2yn",
+     "pc": "258",
+     "pcm": "media",
+     "pe": "16.300",
+     "pf": "16.800",
+     "prec": "",
+     "qtd": "35",
+     "rend": "52,5",
+     "sf": "35",
+     "si": "1"
+    },
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "vaca",
+     "id": "1kayalzpmv12nzld",
+     "pc": "",
+     "pcm": "total",
+     "pe": "",
+     "pf": "36.000",
+     "prec": "",
+     "qtd": "100",
+     "rend": "50",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "",
+   "pecuarista": "Sonia Scalon",
+   "ts": 1791556484927,
+   "id": "n8przhw0mv12h2yn"
+  },
+  "ywv1nhuimv8g5fey": {
+   "data": "2026-10-15",
+   "frigorifico": "JBS- Nova Andradina ",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "cur": [
+      "6",
+      "",
+      ""
+     ],
+     "id": "9yte9l0xmv8g5fey",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": true
+     },
+     "pc": "280,18",
+     "pcm": "media",
+     "pe": "",
+     "pf": "10550",
+     "prec": "",
+     "qtd": "20",
+     "rend": "53",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "",
+   "pecuarista": "Luiz Carlos Burali ",
+   "ts": 1792002719050,
+   "id": "ywv1nhuimv8g5fey"
+  },
+  "tcftoqg7mvp4ghzu": {
+   "data": "2026-10-26",
+   "frigorifico": "Zanchetta- Bataypora ",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "cur": [
+      "10",
+      "20",
+      ""
+     ],
+     "id": "nk0h7cr2mvp4ghzu",
+     "lem": {
+      "brin": false,
+      "pm": true,
+      "prec": false,
+      "pv": false
+     },
+     "pc": "12.572,45",
+     "pcm": "total",
+     "pe": "22.520",
+     "pf": "",
+     "prec": "",
+     "qtd": "45",
+     "rend": "",
+     "sf": "45",
+     "si": "1"
+    }
+   ],
+   "obs": "Teve boi leve 1,2 e 3 e 2 touros conforme romaneio",
+   "pecuarista": "Wilson Bernadino Marques",
+   "ts": 1793011005210,
+   "id": "tcftoqg7mvp4ghzu"
+  },
+  "x7xbbv5bmv6s6pjp": {
+   "data": "2026-10-13",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "id": "l7ek0albmv6s6pjp",
+     "pc": "",
+     "pcm": "media",
+     "pe": "",
+     "pf": "",
+     "prec": "",
+     "qtd": "",
+     "rend": "",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "contagem do precoce conforme planilha do SIF",
+   "pecuarista": "Roberto Nascimento De Oliveira",
+   "ts": 1791902001877,
+   "id": "x7xbbv5bmv6s6pjp"
+  },
+  "ug5zr57fmvsfu7al": {
+   "data": "2026-10-29",
+   "frigorifico": "JBS- Nova Andradina",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "novilha",
+     "cur": [
+      "",
+      "",
+      ""
+     ],
+     "id": "12iky64wmvsfu7al",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": false
+     },
+     "pc": "",
+     "pcm": "media",
+     "pe": "",
+     "pf": "",
+     "prec": "",
+     "qtd": "27",
+     "rend": "",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "contagem do precoce conforme planilha do SIF",
+   "pecuarista": "Ademar Capuci",
+   "ts": 1793211518829,
+   "id": "ug5zr57fmvsfu7al"
+  },
+  "295kgoq7mv81936q": {
+   "data": "2026-10-14",
+   "frigorifico": "JBS- Nova Andradina",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "id": "p29ozcegmv81936q",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": true,
+      "pv": true
+     },
+     "pc": "285",
+     "pcm": "media",
+     "pe": "11.500",
+     "pf": "11.651",
+     "prec": "",
+     "qtd": "23",
+     "rend": "53",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "contagem do precoce conforme planilha do SIF",
+   "pecuarista": "Ademar Capuci",
+   "ts": 1791977695586,
+   "id": "295kgoq7mv81936q"
+  },
+  "tij75ga4mvsfxcr3": {
+   "data": "2026-10-29",
+   "frigorifico": "JBS- Nova Andradina",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "vaca",
+     "cur": [
+      "",
+      "",
+      ""
+     ],
+     "id": "3mz3eb1kmvsfxcr3",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": false
+     },
+     "pc": "",
+     "pcm": "media",
+     "pe": "",
+     "pf": "",
+     "prec": "",
+     "qtd": "45",
+     "rend": "",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "contagem do precoce conforme planilha do SIF",
+   "pecuarista": "Giovani Gomes",
+   "ts": 1793211665871,
+   "id": "tij75ga4mvsfxcr3"
+  },
+  "s1j7hdxjmvsfsscj": {
+   "data": "2026-10-29",
+   "frigorifico": "JBS- Nova Andradina",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "cur": [
+      "",
+      "",
+      ""
+     ],
+     "id": "dk55gvucmvsfsscj",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pvf": true,
+      "pvg": false
+     },
+     "partes": [
+      {
+       "pf": "3.974",
+       "q": "7",
+       "rend": "52"
+      }
+     ],
+     "pc": "",
+     "pcm": "media",
+     "pe": "",
+     "pf": "7.652",
+     "prec": "",
+     "qtd": "14",
+     "rend": "53",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "",
+   "pecuarista": "Irineu Angelo Pasqualini",
+   "ts": 1793211452803,
+   "id": "s1j7hdxjmvsfsscj"
+  },
+  "ozhf62fbmvsg0xan": {
+   "data": "2026-10-29",
+   "frigorifico": "JBS- Nova Andradina",
+   "lotes": [
+    {
+     "bez": {
+      "g": "",
+      "m": "",
+      "p": ""
+     },
+     "cat": "boi",
+     "cur": [
+      "",
+      "",
+      ""
+     ],
+     "id": "jmjnwhvomvsg0xan",
+     "lem": {
+      "brin": false,
+      "pm": false,
+      "prec": false,
+      "pv": false
+     },
+     "pc": "",
+     "pcm": "media",
+     "pe": "",
+     "pf": "",
+     "prec": "",
+     "qtd": "18",
+     "rend": "",
+     "sf": "",
+     "si": ""
+    }
+   ],
+   "obs": "contagem do precoce conforme planilha do SIF",
+   "pecuarista": "Ademar Capuci",
+   "ts": 1793211832463,
+   "id": "ozhf62fbmvsg0xan"
+  }
+ }
+}
