@@ -1,6 +1,6 @@
 # Manual do App Abate (Fechamento de Abate)
 
-Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 27, 29/10/2026.
+Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 28, 29/10/2026.
 
 ## 1. O que tem nesta pasta
 
@@ -85,12 +85,13 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 
 - **Lista "Pecuaristas do dia":** frigorífico, pecuarista, fazenda (letra pequena), cabeças, curral, sequência, médias, situação e resultado em kg e em R$.
 - **Ficha do pecuarista:** bloco 1 (informação do abate, arroba/prazo/juros, rendimento, conferir no abate), bloco 2 (peso de entrada, sequência, curral), bloco 3 (carcaça e resultado).
-- **Mensagem do WhatsApp:** só lotes com peso de carcaça. **Não leva** valor da arroba, prazo, juros nem valores em reais.
+- **Mensagem do WhatsApp:** só lotes com peso de carcaça. Formato: título em negrito (pecuarista e quantidade), Peso Fazenda, Rendimento esperado (e as partes, se houver), Peso Frigorífico e % Fazenda, Resultado (lucro ou prejuízo), e depois Precoce e Bezerros quando existirem, com a Obs no fim. **Não leva** sequência, peso de entrada, % Frigorífico, valor da arroba, prazo, juros nem valores em reais.
 - **Histórico:** todos os abates, com busca por pecuarista, frigorífico, fazenda ou data, e legendas do que falta preencher.
 - **Nomes salvos:** a setinha ▾ no campo Frigorífico ou Pecuarista abre a lista A a Z de nomes já lançados.
 
 ## 9. Histórico de versões
 
+- **v28:** mensagem do WhatsApp no novo formato (título em negrito, blocos separados por linha em branco), sem sequência, peso de entrada e % Frigorífico.
 - **v27:** Zanchetta com peso vivo: o desconto de 1,5% sai do nosso lucro e o app mostra o lucro após o desconto.
 - **v26:** juros em % ao mês (1,87, dividido por 30 ao dia); prazo padrão 30 dias; regras por frigorífico (JBS: adiantamento e lucro pago dia 15 do mês seguinte; Zanchetta: comissão de 10% ou desconto de 1,5% no peso vivo); quadro de lucro por mês da JBS no Histórico.
 - **v25:** "Adiantar pagamento" clicável: sem marcar o gado fica a prazo; marcando, informa os dias adiantados e calcula o desconto.

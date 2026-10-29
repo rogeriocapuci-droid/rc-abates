@@ -514,33 +514,35 @@ input[type="date"] { flex: 1 1 0; }
 
   /* ---------- mensagem do WhatsApp ---------- */
   function lotLines(r, l) {
-    var k = calc(l), cat = CATS[l.cat], L = [];
+    var k = calc(l), cat = CATS[l.cat], G = [];
     var nome = (r.pecuarista || '').trim() || 'Pecuarista';
-    L.push(nome + (k.q ? ' – ' + k.q + ' ' + (k.q === 1 ? cat[0] : cat[1]) : ''));
-    if (k.pe && k.q) L.push('Peso Entrada: ' + f0(k.pe) + '/' + k.q + ' = ' + f2(k.peMed));
-    if (k.pf && k.q) L.push('Peso Fazenda: ' + f0(k.pf) + '/' + k.q + ' = *' + f2(k.pfMed) + '*');
-    if (k.espMed != null) L.push('Rendimento esperado: ' + (k.parts ? k.parts.map(function (p) { return p.q + ' a ' + f2(p.rend) + '%'; }).join(' + ') : f2(k.rend) + '%') + ' = ' + f2(k.espMed) + ' por cabeça');
-    if (k.parts && k.esp != null) k.parts.forEach(function (p, n) { L.push('Parte ' + (n + 1) + ': ' + p.q + ' cab · ' + f0(p.pf) + ' × ' + f2(p.rend) + '% = ' + f2(p.pf * p.rend / 100) + ' kg'); });
-    if (k.pcMed != null) L.push('Peso Frigorífico: ' + (k.pc && k.q ? f0(k.pc) + '/' + k.q + ' = ' : '') + '*' + f2(k.pcMed) + '*');
-    if (k.pctFrig != null) L.push('% Frigorífico: ' + f2(k.pctFrig) + '%');
-    if (k.pctFaz != null) L.push('% Fazenda: *' + f2(k.pctFaz) + '%*');
+    G.push(['*' + nome + (k.q ? ' – ' + k.q + ' ' + (k.q === 1 ? cat[0] : cat[1]) : '') + '*']);
+    if (k.pf && k.q) G.push(['Peso Fazenda: ' + f0(k.pf) + '/' + k.q + ' = *' + f2(k.pfMed) + '*']);
+    if (k.espMed != null) G.push(['Rendimento esperado: ' + (k.parts ? k.parts.map(function (p) { return p.q + ' a ' + f2(p.rend) + '%'; }).join(' + ') : f2(k.rend) + '%') + ' = ' + f2(k.espMed) + ' por cabeça']);
+    if (k.parts && k.esp != null) G.push(k.parts.map(function (p, n) { return 'Parte ' + (n + 1) + ': ' + p.q + ' cab · ' + f0(p.pf) + ' × ' + f2(p.rend) + '% = ' + f2(p.pf * p.rend / 100) + ' kg'; }));
+    var g4 = [];
+    if (k.pcMed != null) g4.push('Peso Frigorífico: ' + (k.pc && k.q ? f0(k.pc) + '/' + k.q + ' = ' : '') + '*' + f2(k.pcMed) + '*');
+    if (k.pctFaz != null) g4.push('% Fazenda: *' + f2(k.pctFaz) + '%*');
+    if (g4.length) G.push(g4);
     if (k.difMed != null) {
       var dm = Math.round(k.difMed * 100) / 100;
-      L.push('Resultado: *' + (dm > 0 ? 'Lucro ' : dm < 0 ? 'Prejuízo ' : 'Sem diferença ') + (dm !== 0 ? signed(dm, f2) + ' kg/cab' : '0,00 kg/cab') + '* (' + signed(k.difKg, f2) + ' kg no lote)');
+      G.push(['Resultado: *' + (dm > 0 ? 'Lucro ' : dm < 0 ? 'Prejuízo ' : 'Sem diferença ') + (dm !== 0 ? signed(dm, f2) + ' kg/cab' : '0,00 kg/cab') + '* (' + signed(k.difKg, f2) + ' kg no lote)']);
     }
-    if (k.si != null && k.sf != null) L.push('Sequência: ' + k.si + ' a ' + k.sf);
     if (l.lem && l.lem.prec && k.pctPrec != null) {
-      L.push('Precoce: ' + k.prec + ' de ' + k.q + ' = ' + f2(k.pctPrec) + '%' + (k.isPrec ? ' (precoce)' : ' (não é precoce)'));
+      G.push(['Precoce: ' + k.prec + ' de ' + k.q + ' = ' + f2(k.pctPrec) + '%' + (k.isPrec ? ' (precoce)' : ' (não é precoce)')]);
     }
     if (l.cat === 'vaca') {
       var g = num(l.bez.g), m = num(l.bez.m), p = num(l.bez.p);
       if (g || m || p) {
-        L.push('Bezerros');
-        if (g) L.push(g + (g === 1 ? ' grande' : ' grandes'));
-        if (m) L.push(m + (m === 1 ? ' médio' : ' médios'));
-        if (p) L.push(p + (p === 1 ? ' pequeno' : ' pequenos'));
+        var bz = ['Bezerros'];
+        if (g) bz.push(g + (g === 1 ? ' grande' : ' grandes'));
+        if (m) bz.push(m + (m === 1 ? ' médio' : ' médios'));
+        if (p) bz.push(p + (p === 1 ? ' pequeno' : ' pequenos'));
+        G.push(bz);
       }
     }
+    var L = [];
+    G.forEach(function (g, i) { if (i) L.push(''); g.forEach(function (x) { L.push(x); }); });
     return L;
   }
   /* Resultado do lote: carcaças reais menos o esperado (peso da fazenda x rendimento esperado). */
