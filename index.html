@@ -202,6 +202,8 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .cur3 { display: flex; align-items: center; gap: 9px; }
 .cur3 input { width: 56px; min-height: 44px; padding: 0 7px; text-align: center; font-size: 20px; font-weight: 600; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); font-variant-numeric: tabular-nums; }
 .cur3 input:focus { outline: 2px solid var(--accent-text); outline-offset: 1px; background: var(--surface); }
+.adirow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
+.adirow .hint { font-size: 13px; align-self: center; }
 .row3e { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; }
 .row3e .f > span { line-height: 1.2; }
 .row3e .f input { padding-inline: 9px; }
@@ -396,7 +398,7 @@ input[type="date"] { flex: 1 1 0; }
   function signed(n, fn) { return (n > 0 ? '+' : n < 0 ? '−' : '') + fn(Math.abs(n)); }
 
   /* ---------- modelo ---------- */
-  function newLot(cat) { return { id: uid(), cat: cat || 'boi', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', arr: '', prz: '', jur: '', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
+  function newLot(cat) { return { id: uid(), cat: cat || 'boi', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', arr: '', prz: '', jur: '', adi: false, dad: '', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
   function newRec(date) { return { id: uid(), data: date, frigorifico: '', pecuarista: '', fazenda: '', ts: Date.now(), obs: OBS_PADRAO, lotes: [newLot()] }; }
   var MAXP = 4;
   /* Formato antigo: um único segundo rendimento (q2 e rend2) tirado do total de cabeças e do peso. Vira a parte 2, com o peso dividido por cabeça. */
@@ -481,7 +483,10 @@ input[type="date"] { flex: 1 1 0; }
     k.valor = k.difKg != null && k.arr ? k.difKg / 15 * k.arr : null;
     k.prz = num(l.prz); k.jur = num(l.jur);
     k.vlote = pc && k.arr ? pc / 15 * k.arr : null;
-    k.desc = k.vlote != null && k.prz && k.jur ? k.vlote * k.jur / 100 * k.prz : null;
+    k.adi = !!l.adi;
+    k.dad = num(l.dad);
+    if (k.dad != null && k.prz && k.dad > k.prz) k.dad = k.prz;
+    k.desc = k.adi && k.vlote != null && k.jur && k.dad ? k.vlote * k.jur / 100 * k.dad : null;
     return k;
   }
   function lotComplete(l) { var k = calc(l); return !!(k.q && k.pf && k.pe && k.pc); }
@@ -808,6 +813,8 @@ input[type="date"] { flex: 1 1 0; }
         '<div class="row3e">' + field(i, 'arr', 'Valor da arroba (R$)', l.arr, { ph: '0,00', max: 7, c: 'c' }) +
         field(i, 'prz', 'Prazo (dias)', l.prz, { mode: 'numeric', max: 3, c: 'c' }) +
         field(i, 'jur', 'Juros prazo (% ao dia)', l.jur, { ph: '0,00', max: 5, c: 'c' }) + '</div>' +
+        '<div class="adirow"><label class="chk"><input type="checkbox" id="l' + i + '-adi" data-f="adi" data-l="' + i + '"' + (l.adi ? ' checked' : '') + '><span>Adiantar pagamento</span></label>' +
+        (l.adi ? field(i, 'dad', 'Dias adiantados' + (num(l.prz) ? ' (de ' + num(l.prz) + ')' : ''), l.dad, { mode: 'numeric', max: 3, c: 'c' }) : '<span class="hint">Sem marcar: o gado fica a prazo.</span>') + '</div>' +
         (l.partes.length ? '<span class="rot">Parte 1</span>' : '') +
         '<div class="row3">' +
         field(i, 'qtd', 'Cabeças', l.qtd, { mode: 'numeric', max: 3, c: 'c' }) +
@@ -903,9 +910,15 @@ input[type="date"] { flex: 1 1 0; }
     } else if (k.pc) {
       b3 += bub('Resultado', '—', 'Informe o rendimento esperado no bloco 1');
     }
-    if (k.desc != null) {
-      b3 += bub('Desconto do adiantamento', '− R$ ' + f2(k.desc), f2(k.jur) + '% ao dia × ' + k.prz + ' dias sobre R$ ' + f2(k.vlote), 'bad');
-      b3 += bub('Valor adiantado', 'R$ ' + f2(k.vlote - k.desc), 'R$ ' + f2(k.vlote) + ' − R$ ' + f2(k.desc), 'key');
+    if (k.vlote != null && !k.adi) {
+      b3 += bub('Valor a prazo', 'R$ ' + f2(k.vlote), k.prz ? 'pagamento em ' + k.prz + ' dias, sem desconto' : 'sem desconto', 'key');
+    } else if (k.vlote != null && k.adi) {
+      if (k.desc != null) {
+        b3 += bub('Desconto do adiantamento', '− R$ ' + f2(k.desc), f2(k.jur) + '% ao dia × ' + k.dad + ' dias adiantados' + (k.prz ? ' (de ' + k.prz + ')' : '') + ' sobre R$ ' + f2(k.vlote), 'bad');
+        b3 += bub('Valor adiantado', 'R$ ' + f2(k.vlote - k.desc), 'R$ ' + f2(k.vlote) + ' − R$ ' + f2(k.desc), 'key');
+      } else {
+        b3 += bub('Valor a prazo', 'R$ ' + f2(k.vlote), 'informe os dias adiantados e o juros ao dia', 'warn');
+      }
     }
     if (k.pctFaz != null) b3 += bub('% Fazenda', f2(k.pctFaz) + '%', 'carcaça ÷ fazenda');
     if (k.pctFrig != null) b3 += bub('% Frigorífico', f2(k.pctFrig) + '%', 'carcaça ÷ entrada');
@@ -1110,7 +1123,7 @@ input[type="date"] { flex: 1 1 0; }
     if (f === 'qtd' || f === 'prec') return v.replace(/\D/g, '').slice(0, 3);
     if (f.indexOf('cur.') === 0) return v.replace(/\D/g, '').slice(0, 2);
     if (f === 'arr') { var ca = v.replace(/\./g, ',').replace(/[^\d,]/g, ''), ka = ca.indexOf(','); return ka < 0 ? ca.slice(0, 4) : ca.slice(0, Math.min(ka, 4)) + ',' + ca.slice(ka + 1).replace(/,/g, '').slice(0, 2); }
-    if (f === 'prz') return v.replace(/\D/g, '').slice(0, 3);
+    if (f === 'prz' || f === 'dad') return v.replace(/\D/g, '').slice(0, 3);
     if (f === 'jur') { var cj = v.replace(/\./g, ',').replace(/[^\d,]/g, ''), kj = cj.indexOf(','); return kj < 0 ? cj.slice(0, 2) : cj.slice(0, Math.min(kj, 2)) + ',' + cj.slice(kj + 1).replace(/,/g, '').slice(0, 3); }
     if (f === 'rend') return v.replace(/\./g, ',').replace(/[^\d,]/g, '').slice(0, 4);
     if (f === 'pf') {
@@ -1150,7 +1163,7 @@ input[type="date"] { flex: 1 1 0; }
       var t = e.target, f = t.dataset.f;
       if (!f || !S.draft) return;
       var D = S.draft;
-      if (f === 'qtd' || f === 'pf' || f === 'arr' || f === 'prz' || f === 'jur' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
+      if (f === 'qtd' || f === 'pf' || f === 'arr' || f === 'prz' || f === 'dad' || f === 'jur' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
       if (f === 'name') { D.pecuarista = t.value; S.q.pec = t.value; updateSug('pec'); }
       else if (f === 'frig') { D.frigorifico = t.value; S.q.frig = t.value; updateSug('frig'); }
       else if (f === 'faz') D.fazenda = t.value;
@@ -1161,6 +1174,7 @@ input[type="date"] { flex: 1 1 0; }
         if (f === 'pcm') { l.pcm = t.value; touched(); renderEditor(); return; }
         if (f.indexOf('p.') === 0) l.partes[+t.dataset.p][f.slice(2)] = t.value;
         else if (f.indexOf('bez.') === 0) l.bez[f.slice(4)] = t.value;
+        else if (f === 'adi') { l.adi = t.checked; touched(); renderEditor(); return; }
         else if (f.indexOf('lem.') === 0) { l.lem[f.slice(4)] = t.checked; if (f === 'lem.prec') { touched(); renderEditor(); return; } }
         else if (f.indexOf('cur.') === 0) l.cur[+f.slice(4)] = t.value;
         else l[f] = t.value;

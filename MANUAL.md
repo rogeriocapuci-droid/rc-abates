@@ -1,6 +1,6 @@
 # Manual do App Abate (Fechamento de Abate)
 
-Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 24, 29/10/2026.
+Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 25, 29/10/2026.
 
 ## 1. O que tem nesta pasta
 
@@ -71,7 +71,9 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 - **% Fazenda** = carcaça ÷ peso da fazenda. **% Frigorífico** = carcaça ÷ peso de entrada.
 - **Precoce:** só é precoce se passar de **60%** do lote (61 de 100 é precoce, 60 não é).
 - **Valor da arroba:** 1 arroba = 15 kg de carcaça. **Valor do resultado** = kg de resultado ÷ 15 × valor da arroba.
-- **Adiantamento (prazo e juros):** valor do lote = carcaça total ÷ 15 × arroba. Desconto = valor do lote × juros % ao dia × dias (juros simples). **Valor adiantado** = valor do lote − desconto.
+- **Prazo e adiantamento:** o campo **Prazo (dias)** é o prazo de pagamento do gado (ex.: 30 dias) e **Juros prazo (% ao dia)** é o desconto diário se o pecuarista quiser receber antes (ex.: 0,08% ao dia = 2,4% ao mês). Valor do lote = carcaça total ÷ 15 × arroba.
+  - **Sem marcar "Adiantar pagamento":** o gado fica a prazo. Aparece só o **Valor a prazo**, sem desconto.
+  - **Marcando "Adiantar pagamento":** aparece o campo **Dias adiantados** (de 1 até o prazo). Desconto = valor do lote × juros ao dia × dias adiantados (juros simples). **Valor adiantado** = valor do lote − desconto. Se digitar mais dias que o prazo, o app usa o prazo.
 - Todos os números usam 2 casas decimais.
 
 ## 8. O que aparece onde
@@ -84,6 +86,7 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 
 ## 9. Histórico de versões
 
+- **v25:** "Adiantar pagamento" clicável: sem marcar o gado fica a prazo; marcando, informa os dias adiantados e calcula o desconto.
 - **v24:** fazenda em letra pequena sob o nome; dados do lote menores na lista.
 - **v23:** curral e sequência na lista do dia.
 - **v22:** campos Prazo (dias) e Juros prazo (% ao dia) com desconto do adiantamento, na mesma linha da arroba.
