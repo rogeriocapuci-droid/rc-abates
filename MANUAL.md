@@ -1,6 +1,6 @@
 # Manual do App Abate (Fechamento de Abate)
 
-Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 25, 29/10/2026.
+Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 26, 29/10/2026.
 
 ## 1. O que tem nesta pasta
 
@@ -71,9 +71,14 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 - **% Fazenda** = carcaça ÷ peso da fazenda. **% Frigorífico** = carcaça ÷ peso de entrada.
 - **Precoce:** só é precoce se passar de **60%** do lote (61 de 100 é precoce, 60 não é).
 - **Valor da arroba:** 1 arroba = 15 kg de carcaça. **Valor do resultado** = kg de resultado ÷ 15 × valor da arroba.
-- **Prazo e adiantamento:** o campo **Prazo (dias)** é o prazo de pagamento do gado (ex.: 30 dias) e **Juros prazo (% ao dia)** é o desconto diário se o pecuarista quiser receber antes (ex.: 0,08% ao dia = 2,4% ao mês). Valor do lote = carcaça total ÷ 15 × arroba.
-  - **Sem marcar "Adiantar pagamento":** o gado fica a prazo. Aparece só o **Valor a prazo**, sem desconto.
-  - **Marcando "Adiantar pagamento":** aparece o campo **Dias adiantados** (de 1 até o prazo). Desconto = valor do lote × juros ao dia × dias adiantados (juros simples). **Valor adiantado** = valor do lote − desconto. Se digitar mais dias que o prazo, o app usa o prazo.
+- **Regras por frigorífico** (o app reconhece pelo nome digitado no campo Frigorífico):
+  - **JBS** (Nova Andradina, Naviraí e qualquer nome com "JBS"): aparecem os campos **Prazo (dias)** e **Juros prazo (% ao mês)**. O prazo padrão é 30 dias e o juros padrão é 1,87% ao mês, que o app divide por 30 para achar o desconto por dia (0,0623% ao dia).
+    - **Sem marcar "Adiantar pagamento":** o gado fica a prazo. Aparece só o **Valor a prazo**, sem desconto.
+    - **Marcando "Adiantar pagamento":** aparece **Dias adiantados** (de 1 até o prazo). Desconto = valor do lote × juros ao dia × dias adiantados (juros simples). **Valor adiantado** = valor do lote − desconto. Mais dias que o prazo contam como o prazo.
+    - O valor do lote é o que o pecuarista recebe pelo que foi acertado: carcaça total ÷ 15 × valor da arroba.
+    - O **lucro não leva esse desconto**. O lucro de todos os lotes do dia 1 ao último dia do mês é somado e pago no **dia 15 do mês seguinte**. A ficha mostra "Lucro pago em 15/mm/aaaa" e o Histórico mostra o quadro **JBS · lucro por mês**.
+  - **Zanchetta:** comissão de **10%** sobre o valor do lote (aparece também o valor por animal). Se estiver marcado **Peso vivo frigorífico** em "Conferir no abate", o frigorífico desconta **1,5%** do peso total (despesas dele) e **não paga comissão**. O app mostra o desconto em kg e o **Peso pago**.
+  - **Outros frigoríficos:** só aparece o campo de arroba, sem prazo, juros ou comissão.
 - Todos os números usam 2 casas decimais.
 
 ## 8. O que aparece onde
@@ -86,6 +91,7 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 
 ## 9. Histórico de versões
 
+- **v26:** juros em % ao mês (1,87, dividido por 30 ao dia); prazo padrão 30 dias; regras por frigorífico (JBS: adiantamento e lucro pago dia 15 do mês seguinte; Zanchetta: comissão de 10% ou desconto de 1,5% no peso vivo); quadro de lucro por mês da JBS no Histórico.
 - **v25:** "Adiantar pagamento" clicável: sem marcar o gado fica a prazo; marcando, informa os dias adiantados e calcula o desconto.
 - **v24:** fazenda em letra pequena sob o nome; dados do lote menores na lista.
 - **v23:** curral e sequência na lista do dia.

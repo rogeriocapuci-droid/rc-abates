@@ -202,6 +202,11 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .cur3 { display: flex; align-items: center; gap: 9px; }
 .cur3 input { width: 56px; min-height: 44px; padding: 0 7px; text-align: center; font-size: 20px; font-weight: 600; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); font-variant-numeric: tabular-nums; }
 .cur3 input:focus { outline: 2px solid var(--accent-text); outline-offset: 1px; background: var(--surface); }
+.mesjbs { gap: 8px; margin-bottom: 12px; }
+.mesrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.mesrow .valor { white-space: nowrap; }
+.mesrow:first-of-type { border-top: 0; padding-top: 0; }
+.mesrow .hint { display: block; font-size: 12.5px; }
 .adirow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
 .adirow .hint { font-size: 13px; align-self: center; }
 .row3e { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; }
@@ -398,7 +403,7 @@ input[type="date"] { flex: 1 1 0; }
   function signed(n, fn) { return (n > 0 ? '+' : n < 0 ? '−' : '') + fn(Math.abs(n)); }
 
   /* ---------- modelo ---------- */
-  function newLot(cat) { return { id: uid(), cat: cat || 'boi', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', arr: '', prz: '', jur: '', adi: false, dad: '', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
+  function newLot(cat) { return { id: uid(), cat: cat || 'boi', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', arr: '', prz: '30', jm: '1,87', adi: false, dad: '', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
   function newRec(date) { return { id: uid(), data: date, frigorifico: '', pecuarista: '', fazenda: '', ts: Date.now(), obs: OBS_PADRAO, lotes: [newLot()] }; }
   var MAXP = 4;
   /* Formato antigo: um único segundo rendimento (q2 e rend2) tirado do total de cabeças e do peso. Vira a parte 2, com o peso dividido por cabeça. */
@@ -422,7 +427,7 @@ input[type="date"] { flex: 1 1 0; }
       var base = newLot(l.cat);
       Object.keys(base).forEach(function (k) { if (l[k] == null) l[k] = base[k]; });
       l.bez = Object.assign({ g: '', m: '', p: '' }, l.bez || {});
-      migrarR2(l);
+      migrarR2(l); delete l.jur;
       l.partes = (Array.isArray(l.partes) ? l.partes : []).slice(0, MAXP).map(function (p) { return { q: p && p.q != null ? p.q : '', pf: p && p.pf != null ? p.pf : '', rend: p && p.rend != null ? p.rend : '' }; });
       var hadLem = !!l.lem;
       l.lem = Object.assign({ prec: false, brin: false, pvf: false, pvg: false, pm: false }, l.lem || {});
@@ -481,14 +486,18 @@ input[type="date"] { flex: 1 1 0; }
     k.difMed = k.difKg != null && q ? k.difKg / q : null;
     k.arr = num(l.arr);
     k.valor = k.difKg != null && k.arr ? k.difKg / 15 * k.arr : null;
-    k.prz = num(l.prz); k.jur = num(l.jur);
+    k.prz = num(l.prz);
     k.vlote = pc && k.arr ? pc / 15 * k.arr : null;
     k.adi = !!l.adi;
     k.dad = num(l.dad);
     if (k.dad != null && k.prz && k.dad > k.prz) k.dad = k.prz;
-    k.desc = k.adi && k.vlote != null && k.jur && k.dad ? k.vlote * k.jur / 100 * k.dad : null;
+    k.jm = num(l.jm); k.jd = k.jm != null ? k.jm / 30 : null;
+    k.desc = k.adi && k.vlote != null && k.jd && k.dad ? k.vlote * k.jd / 100 * k.dad : null;
     return k;
   }
+  /* Regras por frigorífico: JBS (Nova Andradina, Naviraí e demais) e Zanchetta. */
+  function frgTipo(nome) { var n = norm(nome); return /jbs/.test(n) ? 'jbs' : /zanchet|zanquet/.test(n) ? 'zan' : ''; }
+  function pag15(iso) { var p = String(iso || '').split('-').map(Number); if (p.length < 3 || !p[0]) return ''; var m = p[1] + 1, y = p[0]; if (m > 12) { m = 1; y++; } return '15/' + pad(m) + '/' + y; }
   function lotComplete(l) { var k = calc(l); return !!(k.q && k.pf && k.pe && k.pc); }
   function recStatus(r) {
     if (r.lotes.every(lotComplete)) return 'fechado';
@@ -739,6 +748,21 @@ input[type="date"] { flex: 1 1 0; }
     if (t === 'hist') renderHist(); else window.scrollTo(0, 0);
   }
   function isoBR(d) { var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  /* JBS: o lucro do dia 1 ao último dia do mês é somado e pago no dia 15 do mês seguinte. */
+  function mesJBS() {
+    var m = {};
+    S.all.forEach(function (r) {
+      if (frgTipo(r.frigorifico) !== 'jbs' || !r.data) return;
+      var key = r.data.slice(0, 7);
+      (r.lotes || []).forEach(function (l) { var k = calc(l); if (k.valor == null) return; var o = m[key] || (m[key] = { kg: 0, v: 0, n: 0, d: r.data }); o.kg += k.difKg; o.v += k.valor; o.n++; });
+    });
+    var keys = Object.keys(m).sort().reverse();
+    if (!keys.length) return '';
+    return '<div class="cartao mesjbs"><h4 class="rot">JBS · lucro por mês</h4>' + keys.map(function (k) {
+      var o = m[k], p = k.split('-').map(Number), nome = new Date(p[0], p[1] - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      return '<div class="mesrow"><span><b>' + esc(nome.charAt(0).toUpperCase() + nome.slice(1)) + '</b><span class="hint">' + o.n + (o.n === 1 ? ' lote' : ' lotes') + ' · ' + signed(o.kg, f2) + ' kg · pago em ' + esc(pag15(o.d)) + '</span></span><b class="valor ' + (o.v >= 0 ? 'ok' : 'bad') + '">R$ ' + signed(o.v, f2) + '</b></div>';
+    }).join('') + '</div>';
+  }
   function renderHist() {
     var box = $('#hist'), sum = $('#histsum');
     if (!box) return;
@@ -755,7 +779,7 @@ input[type="date"] { flex: 1 1 0; }
     });
     sum.textContent = rows.length ? rows.length + (rows.length === 1 ? ' abate' : ' abates') + ' · ' + withP + (withP === 1 ? ' com pendência' : ' com pendência') : '';
     if (!vis.length) { box.innerHTML = '<div class="empty"><p>' + (rows.length ? 'Nenhum abate encontrado com esse filtro.' : 'Nenhum abate lançado ainda.') + '</p></div>'; return; }
-    var html = '', last = '';
+    var html = q ? '' : mesJBS(), last = '';
     vis.forEach(function (x) {
       var r = x.r, p = x.p, st = STATUS[recStatus(r)];
       if (r.data !== last) { var dl = dateLabel(r.data); html += '<div class="hdate">' + esc(dl.charAt(0).toUpperCase() + dl.slice(1)) + '</div>'; last = r.data; }
@@ -811,9 +835,9 @@ input[type="date"] { flex: 1 1 0; }
       blk(1, 'Informação do abate', 'dia anterior',
         '<div class="seg" role="radiogroup" aria-label="Categoria do lote ' + (i + 1) + '">' + seg + '</div>' +
         '<div class="row3e">' + field(i, 'arr', 'Valor da arroba (R$)', l.arr, { ph: '0,00', max: 7, c: 'c' }) +
-        field(i, 'prz', 'Prazo (dias)', l.prz, { mode: 'numeric', max: 3, c: 'c' }) +
-        field(i, 'jur', 'Juros prazo (% ao dia)', l.jur, { ph: '0,00', max: 5, c: 'c' }) + '</div>' +
-        '<div class="adirow"><label class="chk"><input type="checkbox" id="l' + i + '-adi" data-f="adi" data-l="' + i + '"' + (l.adi ? ' checked' : '') + '><span>Adiantar pagamento</span></label>' +
+        field(i, 'prz', 'Prazo (dias)', l.prz, { mode: 'numeric', max: 3, c: 'c' }).replace('<label ', '<label data-so="jbs" ') +
+        field(i, 'jm', 'Juros prazo (% ao mês)', l.jm, { ph: '1,87', max: 5, c: 'c' }).replace('<label ', '<label data-so="jbs" ') + '</div>' +
+        '<div class="adirow" data-so="jbs"><label class="chk"><input type="checkbox" id="l' + i + '-adi" data-f="adi" data-l="' + i + '"' + (l.adi ? ' checked' : '') + '><span>Adiantar pagamento</span></label>' +
         (l.adi ? field(i, 'dad', 'Dias adiantados' + (num(l.prz) ? ' (de ' + num(l.prz) + ')' : ''), l.dad, { mode: 'numeric', max: 3, c: 'c' }) : '<span class="hint">Sem marcar: o gado fica a prazo.</span>') + '</div>' +
         (l.partes.length ? '<span class="rot">Parte 1</span>' : '') +
         '<div class="row3">' +
@@ -910,14 +934,29 @@ input[type="date"] { flex: 1 1 0; }
     } else if (k.pc) {
       b3 += bub('Resultado', '—', 'Informe o rendimento esperado no bloco 1');
     }
-    if (k.vlote != null && !k.adi) {
-      b3 += bub('Valor a prazo', 'R$ ' + f2(k.vlote), k.prz ? 'pagamento em ' + k.prz + ' dias, sem desconto' : 'sem desconto', 'key');
-    } else if (k.vlote != null && k.adi) {
-      if (k.desc != null) {
-        b3 += bub('Desconto do adiantamento', '− R$ ' + f2(k.desc), f2(k.jur) + '% ao dia × ' + k.dad + ' dias adiantados' + (k.prz ? ' (de ' + k.prz + ')' : '') + ' sobre R$ ' + f2(k.vlote), 'bad');
-        b3 += bub('Valor adiantado', 'R$ ' + f2(k.vlote - k.desc), 'R$ ' + f2(k.vlote) + ' − R$ ' + f2(k.desc), 'key');
-      } else {
-        b3 += bub('Valor a prazo', 'R$ ' + f2(k.vlote), 'informe os dias adiantados e o juros ao dia', 'warn');
+    var tipo = frgTipo(S.draft && S.draft.frigorifico), lt = S.draft && S.draft.lotes[i];
+    if (tipo === 'jbs') {
+      if (k.vlote != null && !k.adi) {
+        b3 += bub('Valor a prazo', 'R$ ' + f2(k.vlote), k.prz ? 'pagamento em ' + k.prz + ' dias, sem desconto' : 'sem desconto', 'key');
+      } else if (k.vlote != null && k.adi) {
+        if (k.desc != null) {
+          b3 += bub('Desconto do adiantamento', '− R$ ' + f2(k.desc), fmtN(k.jm, 2, 2) + '% ao mês ÷ 30 = ' + fmtN(k.jd, 2, 4) + '% ao dia × ' + k.dad + ' dias adiantados' + (k.prz ? ' (de ' + k.prz + ')' : '') + ' sobre R$ ' + f2(k.vlote), 'bad');
+          b3 += bub('Valor adiantado', 'R$ ' + f2(k.vlote - k.desc), 'R$ ' + f2(k.vlote) + ' − R$ ' + f2(k.desc), 'key');
+        } else {
+          b3 += bub('Valor a prazo', 'R$ ' + f2(k.vlote), 'informe os dias adiantados e o juros ao mês', 'warn');
+        }
+      }
+      var pg = pag15(S.draft && S.draft.data);
+      if (k.difMed != null && pg) b3 += bub('Lucro pago em', pg, (k.valor != null ? 'R$ ' + signed(k.valor, f2) + ' neste lote, ' : '') + 'livre do desconto do adiantamento · soma do mês');
+    } else if (tipo === 'zan') {
+      if (lt && lt.lem && lt.lem.pvg) {
+        if (k.pe) {
+          b3 += bub('Despesas do frigorífico 1,5%', '− ' + f2(k.pe * 0.015) + ' kg', '1,5% × ' + f0(k.pe) + ' kg de peso total', 'bad');
+          b3 += bub('Peso pago', f2(k.pe * 0.985) + ' kg', f0(k.pe) + ' − ' + f2(k.pe * 0.015), 'key');
+        }
+        b3 += bub('Comissão', 'não paga', 'peso vivo no frigorífico');
+      } else if (k.vlote != null) {
+        b3 += bub('Comissão 10%', 'R$ ' + f2(k.vlote * 0.10), '10% × R$ ' + f2(k.vlote) + (k.q ? ' · R$ ' + f2(k.vlote * 0.10 / k.q) + ' por animal' : ''), 'key');
       }
     }
     if (k.pctFaz != null) b3 += bub('% Fazenda', f2(k.pctFaz) + '%', 'carcaça ÷ fazenda');
@@ -934,6 +973,8 @@ input[type="date"] { flex: 1 1 0; }
   function updateComputed() {
     var D = S.draft;
     if (!D) return;
+    var tp = frgTipo(D.frigorifico);
+    document.querySelectorAll('#editPane [data-so]').forEach(function (el) { el.hidden = el.dataset.so !== tp; });
     D.lotes.forEach(function (l, i) {
       var k = calc(l), bb = bubs(k, i);
       [1, 2, 3].forEach(function (b) { var el = $('[data-b="' + b + '-' + i + '"]'); if (el) el.innerHTML = bb[b]; });
@@ -1124,7 +1165,7 @@ input[type="date"] { flex: 1 1 0; }
     if (f.indexOf('cur.') === 0) return v.replace(/\D/g, '').slice(0, 2);
     if (f === 'arr') { var ca = v.replace(/\./g, ',').replace(/[^\d,]/g, ''), ka = ca.indexOf(','); return ka < 0 ? ca.slice(0, 4) : ca.slice(0, Math.min(ka, 4)) + ',' + ca.slice(ka + 1).replace(/,/g, '').slice(0, 2); }
     if (f === 'prz' || f === 'dad') return v.replace(/\D/g, '').slice(0, 3);
-    if (f === 'jur') { var cj = v.replace(/\./g, ',').replace(/[^\d,]/g, ''), kj = cj.indexOf(','); return kj < 0 ? cj.slice(0, 2) : cj.slice(0, Math.min(kj, 2)) + ',' + cj.slice(kj + 1).replace(/,/g, '').slice(0, 3); }
+    if (f === 'jm') { var cj = v.replace(/\./g, ',').replace(/[^\d,]/g, ''), kj = cj.indexOf(','); return kj < 0 ? cj.slice(0, 2) : cj.slice(0, Math.min(kj, 2)) + ',' + cj.slice(kj + 1).replace(/,/g, '').slice(0, 3); }
     if (f === 'rend') return v.replace(/\./g, ',').replace(/[^\d,]/g, '').slice(0, 4);
     if (f === 'pf') {
       var c = v.replace(/[^\d.,]/g, ''), k = c.indexOf(','), ip = k < 0 ? c : c.slice(0, k), dp = k < 0 ? null : c.slice(k + 1).replace(/\D/g, '').slice(0, 2);
@@ -1163,7 +1204,7 @@ input[type="date"] { flex: 1 1 0; }
       var t = e.target, f = t.dataset.f;
       if (!f || !S.draft) return;
       var D = S.draft;
-      if (f === 'qtd' || f === 'pf' || f === 'arr' || f === 'prz' || f === 'dad' || f === 'jur' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
+      if (f === 'qtd' || f === 'pf' || f === 'arr' || f === 'prz' || f === 'dad' || f === 'jm' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
       if (f === 'name') { D.pecuarista = t.value; S.q.pec = t.value; updateSug('pec'); }
       else if (f === 'frig') { D.frigorifico = t.value; S.q.frig = t.value; updateSug('frig'); }
       else if (f === 'faz') D.fazenda = t.value;
