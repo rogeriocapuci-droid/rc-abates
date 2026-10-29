@@ -1,6 +1,6 @@
 # Manual do App Abate (Fechamento de Abate)
 
-Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 26, 29/10/2026.
+Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 27, 29/10/2026.
 
 ## 1. O que tem nesta pasta
 
@@ -77,7 +77,7 @@ Depois de cada mudança, atualize a seção 9 (histórico).
     - **Marcando "Adiantar pagamento":** aparece **Dias adiantados** (de 1 até o prazo). Desconto = valor do lote × juros ao dia × dias adiantados (juros simples). **Valor adiantado** = valor do lote − desconto. Mais dias que o prazo contam como o prazo.
     - O valor do lote é o que o pecuarista recebe pelo que foi acertado: carcaça total ÷ 15 × valor da arroba.
     - O **lucro não leva esse desconto**. O lucro de todos os lotes do dia 1 ao último dia do mês é somado e pago no **dia 15 do mês seguinte**. A ficha mostra "Lucro pago em 15/mm/aaaa" e o Histórico mostra o quadro **JBS · lucro por mês**.
-  - **Zanchetta:** comissão de **10%** sobre o valor do lote (aparece também o valor por animal). Se estiver marcado **Peso vivo frigorífico** em "Conferir no abate", o frigorífico desconta **1,5%** do peso total (despesas dele) e **não paga comissão**. O app mostra o desconto em kg e o **Peso pago**.
+  - **Zanchetta:** comissão de **10%** sobre o valor do lote (aparece também o valor por animal). Se estiver marcado **Peso vivo frigorífico** em "Conferir no abate", **não há comissão** e o frigorífico desconta **1,5%** do peso total (despesas dele). Esse desconto sai do **nosso lucro** (na JBS, o desconto do adiantamento sai do pecuarista). O app mostra o desconto em kg e o **Lucro após o desconto** (em kg e em R$).
   - **Outros frigoríficos:** só aparece o campo de arroba, sem prazo, juros ou comissão.
 - Todos os números usam 2 casas decimais.
 
@@ -91,6 +91,7 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 
 ## 9. Histórico de versões
 
+- **v27:** Zanchetta com peso vivo: o desconto de 1,5% sai do nosso lucro e o app mostra o lucro após o desconto.
 - **v26:** juros em % ao mês (1,87, dividido por 30 ao dia); prazo padrão 30 dias; regras por frigorífico (JBS: adiantamento e lucro pago dia 15 do mês seguinte; Zanchetta: comissão de 10% ou desconto de 1,5% no peso vivo); quadro de lucro por mês da JBS no Histórico.
 - **v25:** "Adiantar pagamento" clicável: sem marcar o gado fica a prazo; marcando, informa os dias adiantados e calcula o desconto.
 - **v24:** fazenda em letra pequena sob o nome; dados do lote menores na lista.

@@ -951,8 +951,12 @@ input[type="date"] { flex: 1 1 0; }
     } else if (tipo === 'zan') {
       if (lt && lt.lem && lt.lem.pvg) {
         if (k.pe) {
-          b3 += bub('Despesas do frigorífico 1,5%', '− ' + f2(k.pe * 0.015) + ' kg', '1,5% × ' + f0(k.pe) + ' kg de peso total', 'bad');
-          b3 += bub('Peso pago', f2(k.pe * 0.985) + ' kg', f0(k.pe) + ' − ' + f2(k.pe * 0.015), 'key');
+          var dkg = k.pe * 0.015;
+          b3 += bub('Despesas do frigorífico 1,5%', '− ' + f2(dkg) + ' kg', '1,5% × ' + f0(k.pe) + ' kg de peso total, descontado do nosso lucro', 'bad');
+          if (k.difKg != null) {
+            var lq = k.difKg - dkg;
+            b3 += bub('Lucro após o desconto', signed(lq, f2) + ' kg', signed(k.difKg, f2) + ' − ' + f2(dkg) + ' kg' + (k.arr ? ' = R$ ' + signed(lq / 15 * k.arr, f2) : ''), lq >= 0 ? 'ok' : 'bad');
+          }
         }
         b3 += bub('Comissão', 'não paga', 'peso vivo no frigorífico');
       } else if (k.vlote != null) {
