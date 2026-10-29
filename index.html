@@ -208,7 +208,11 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .mesrow:first-of-type { border-top: 0; padding-top: 0; }
 .mesrow .hint { display: block; font-size: 12.5px; }
 .adirow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
+.adirow .chk { font-size: 12.75px; }
 .adirow .hint { font-size: 13px; align-self: center; }
+.f.imp > span { color: var(--amber); font-weight: 700; }
+.f.imp input { background: var(--amber-soft); border-color: var(--amber); border-width: 2px; font-weight: 700; }
+.f.imp input:focus { background: var(--surface); outline-color: var(--amber); }
 .row3e { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; }
 .row3e .f > span { line-height: 1.2; }
 .row3e .f input { padding-inline: 9px; }
@@ -559,7 +563,7 @@ input[type="date"] { flex: 1 1 0; }
   function buildMsg(r) {
     var blocks = r.lotes.filter(function (l) { return calc(l).pcMed != null; }).map(function (l) { return lotLines(r, l).join('\n'); });
     var obs = (r.obs || '').trim();
-    return blocks.length ? blocks.join('\n\n') + (obs ? '\n\nObs: ' + obs : '') : '';
+    return blocks.length ? blocks.join('\n\n————————————\n\n') + (obs ? '\n\nObs: ' + obs : '') : '';
   }
 
   /* ---------- armazenamento ---------- */
@@ -867,7 +871,7 @@ input[type="date"] { flex: 1 1 0; }
         '<input type="radio" name="pcm' + i + '" id="l' + i + '-pcm-total" data-f="pcm" data-l="' + i + '" value="total"' + (l.pcm !== 'media' ? ' checked' : '') + '><label for="l' + i + '-pcm-total">Total do lote</label>' +
         '<input type="radio" name="pcm' + i + '" id="l' + i + '-pcm-media" data-f="pcm" data-l="' + i + '" value="media"' + (l.pcm === 'media' ? ' checked' : '') + '><label for="l' + i + '-pcm-media">Média por cabeça</label></div>' +
         '<div class="grid">' +
-        field(i, 'pc', l.pcm === 'media' ? 'Peso do frigorífico (média, kg por cabeça)' : 'Peso do frigorífico (total do lote, kg)', l.pc, { w: 1 }) +
+        field(i, 'pc', l.pcm === 'media' ? 'Peso do frigorífico (média, kg por cabeça)' : 'Peso do frigorífico (total do lote, kg)', l.pc, { w: 1, c: 'imp' }) +
         (l.lem.prec ? field(i, 'prec', 'Precoce (cabeças que deram)', l.prec, { mode: 'numeric', max: 3 }) : '') + '</div>' +
         (l.lem.prec ? '' : '<p class="hint">Para lançar o precoce, marque Precoce em Conferir no abate (bloco 1).</p>') + bez) +
       '</div>';
@@ -903,8 +907,6 @@ input[type="date"] { flex: 1 1 0; }
   function bubs(k, i) {
     var b1 = '', b2 = '', b3 = '';
     if (k.pfMed != null) b1 += bub('Média na fazenda', f2(k.pfMed) + ' kg', f0(k.pf) + ' ÷ ' + k.q + ' cabeças');
-    if (k.parts) k.parts.forEach(function (p, n) { if (p.pf && p.rend) b1 += bub('Parte ' + (n + 1) + ' · ' + (p.q || '?') + ' cab', f2(p.pf * p.rend / 100) + ' kg', f0(p.pf) + ' × ' + f2(p.rend) + '% = ' + f2(p.pf * p.rend / 100)); });
-    if (k.esp != null) b1 += bub(k.parts ? 'Peso esperado (soma das partes)' : 'Peso esperado', f2(k.esp) + ' kg', k.parts ? k.parts.map(function (p) { return f2(p.pf * p.rend / 100); }).join(' + ') : f0(k.pf) + ' × ' + f2(k.rend) + '%');
     if (k.espMed != null) b1 += bub('Esperado por cabeça', f2(k.espMed) + ' kg', f2(k.esp) + ' ÷ ' + k.q + ' cabeças', 'key');
     if (!b1) b1 = '<p class="hint">Preencha quantidade, peso da fazenda e rendimento para ver o esperado.</p>';
 
