@@ -110,12 +110,22 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .hdate { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); margin: 15px 2px 7px; }
 .hdate:first-child { margin-top: 3px; }
 #hist .card { margin-bottom: 9px; }
+.faz { display: block; font-size: 11.5px; line-height: 1.25; color: var(--ink-2); margin-top: 0; overflow-wrap: anywhere; }
+.faz.nov { opacity: .65; }
+.lrow .sm.cs { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.cs .curl { color: var(--amber); font-weight: 700; }
+.cs .nov { color: var(--ink-2); opacity: .7; }
 .frg { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); overflow-wrap: anywhere; }
 .legs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
 .leg { font-size: 11.5px; line-height: 1.2; font-weight: 600; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-2); background: var(--surface-2); }
 .leg.k { background: var(--bad-soft); border-color: transparent; color: var(--bad); }
 .leg.w { background: var(--amber-soft); border-color: transparent; color: var(--amber); }
 .leg.g { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+.fw { position: relative; display: block; }
+.fw input { width: 100%; padding-right: 52px; }
+.chev { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; color: var(--accent-text); font-size: 22px; line-height: 1; cursor: pointer; border-radius: 10px; transition: transform .15s; }
+.chev[aria-expanded="true"] { transform: translateY(-50%) rotate(180deg); }
+.chev[hidden] { display: none; }
 .sugopen, .sugclose { min-height: 36px; padding-block: 5px; font-size: 14px; align-self: flex-start; }
 .rot { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); }
 .listhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -131,10 +141,14 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .lots { display: flex; flex-direction: column; gap: 9px; margin-top: 3px; }
 .lrow { flex-wrap: wrap; display: flex; justify-content: space-between; align-items: center; gap: 7px; padding-top: 9px; border-top: 1px solid var(--line); font-size: 16px; }
 .lrow .t { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
-.lrow .sm { display: block; font-weight: 400; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lrow .sm { display: block; font-weight: 400; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .lrow .chip { flex: none; }
 .lt { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .chip { font-size: 13px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; background: var(--accent-soft); color: var(--accent-text); }
+.resbox { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.valor { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.valor.ok { color: var(--ok); }
+.valor.bad { color: var(--bad); }
 .chip.ok { background: var(--ok-soft); color: var(--ok); }
 .chip.warn { background: var(--warn-soft); color: var(--warn); }
 .chip.bad { background: var(--bad-soft); color: var(--bad); }
@@ -188,6 +202,9 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .cur3 { display: flex; align-items: center; gap: 9px; }
 .cur3 input { width: 56px; min-height: 44px; padding: 0 7px; text-align: center; font-size: 20px; font-weight: 600; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); font-variant-numeric: tabular-nums; }
 .cur3 input:focus { outline: 2px solid var(--accent-text); outline-offset: 1px; background: var(--surface); }
+.row3e { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.row3e .f > span { line-height: 1.2; }
+.row3e .f input { padding-inline: 9px; }
 .row3 { display: grid; grid-template-columns: 84px minmax(0, 1fr) 104px; gap: 10px; align-items: end; }
 .row3 .f > span { line-height: 1.2; }
 .row3 .f input { padding-inline: 9px; }
@@ -379,8 +396,8 @@ input[type="date"] { flex: 1 1 0; }
   function signed(n, fn) { return (n > 0 ? '+' : n < 0 ? '−' : '') + fn(Math.abs(n)); }
 
   /* ---------- modelo ---------- */
-  function newLot(cat) { return { id: uid(), cat: cat || 'boi', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
-  function newRec(date) { return { id: uid(), data: date, frigorifico: '', pecuarista: '', ts: Date.now(), obs: OBS_PADRAO, lotes: [newLot()] }; }
+  function newLot(cat) { return { id: uid(), cat: cat || 'boi', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', arr: '', prz: '', jur: '', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
+  function newRec(date) { return { id: uid(), data: date, frigorifico: '', pecuarista: '', fazenda: '', ts: Date.now(), obs: OBS_PADRAO, lotes: [newLot()] }; }
   var MAXP = 4;
   /* Formato antigo: um único segundo rendimento (q2 e rend2) tirado do total de cabeças e do peso. Vira a parte 2, com o peso dividido por cabeça. */
   function migrarR2(l) {
@@ -418,6 +435,7 @@ input[type="date"] { flex: 1 1 0; }
     if (r.obs == null || r.obs === OBS_ANTIGA) r.obs = '';
     if (r.pecuarista == null) r.pecuarista = '';
     if (r.frigorifico == null) r.frigorifico = '';
+    if (r.fazenda == null) r.fazenda = '';
     return r;
   }
 
@@ -459,6 +477,11 @@ input[type="date"] { flex: 1 1 0; }
     k.difPts = k.pctFaz != null && rend ? k.pctFaz - rend : null;
     k.espMed = k.esp != null && q ? k.esp / q : null;
     k.difMed = k.difKg != null && q ? k.difKg / q : null;
+    k.arr = num(l.arr);
+    k.valor = k.difKg != null && k.arr ? k.difKg / 15 * k.arr : null;
+    k.prz = num(l.prz); k.jur = num(l.jur);
+    k.vlote = pc && k.arr ? pc / 15 * k.arr : null;
+    k.desc = k.vlote != null && k.prz && k.jur ? k.vlote * k.jur / 100 * k.prz : null;
     return k;
   }
   function lotComplete(l) { var k = calc(l); return !!(k.q && k.pf && k.pe && k.pc); }
@@ -513,7 +536,9 @@ input[type="date"] { flex: 1 1 0; }
     var d = Math.round(k.difMed * 100) / 100;
     if (d === 0) return '<span class="chip">Sem diferença</span>';
     var win = d > 0;
-    return '<span class="chip ' + (win ? 'ok' : 'bad') + '">' + (win ? 'Lucro ' : 'Prejuízo ') + signed(d, f2) + ' kg/cab' + (full ? ' · ' + signed(k.difKg, f2) + ' kg' : '') + '</span>';
+    var chip = '<span class="chip ' + (win ? 'ok' : 'bad') + '">' + (win ? 'Lucro ' : 'Prejuízo ') + signed(d, f2) + ' kg/cab' + (full ? ' · ' + signed(k.difKg, f2) + ' kg' : '') + '</span>';
+    if (full && k.valor != null) return '<span class="resbox">' + chip + '<span class="valor ' + (k.valor >= 0 ? 'ok' : 'bad') + '">R$ ' + signed(k.valor, f2) + '</span></span>';
+    return chip;
   }
   function buildMsg(r) {
     var blocks = r.lotes.filter(function (l) { return calc(l).pcMed != null; }).map(function (l) { return lotLines(r, l).join('\n'); });
@@ -615,6 +640,13 @@ input[type="date"] { flex: 1 1 0; }
     var on = LEMB.filter(function (x) { return l.lem && l.lem[x[0]]; }).map(function (x) { return x[1]; });
     return on.length ? '<span class="sm lemb">Lembrar: ' + esc(on.join(' · ')) + '</span>' : '';
   }
+  function curLinha(l) {
+    var c = (l.cur || []).map(function (x) { return String(x || '').trim(); }).filter(Boolean);
+    var si = String(l.si == null ? '' : l.si).trim(), sf = String(l.sf == null ? '' : l.sf).trim();
+    var cur = c.length ? '<b class="curl">' + (c.length > 1 ? 'Currais ' : 'Curral ') + esc(c.join(' · ')) + '</b>' : '<span class="nov">Curral —</span>';
+    var seq = si && sf ? '<b class="curl">Sequência ' + esc(si) + ' a ' + esc(sf) + '</b>' : si || sf ? '<b class="curl">Sequência ' + esc(si || sf) + (si ? ' a —' : '') + '</b>' : '<span class="nov">Sequência —</span>';
+    return '<span class="sm cs">' + cur + seq + '</span>';
+  }
   function renderList() {
     var box = $('#cards');
     if (S.loading) { box.innerHTML = '<p class="empty">Carregando…</p>'; return; }
@@ -628,11 +660,12 @@ input[type="date"] { flex: 1 1 0; }
       var lots = r.lotes.map(function (l, i) {
         var k = calc(l), cat = CATS[l.cat];
         var t = (r.lotes.length > 1 ? 'Lote ' + (i + 1) + ' · ' : '') + (k.q ? k.q + ' ' + (k.q === 1 ? cat[0] : cat[1]) : cat[2]);
-        return '<span class="lrow"><span class="t">' + esc(t) + '<span class="sm">' + (k.pfMed != null ? 'Média na fazenda ' + esc(f2(k.pfMed)) + ' kg' : 'Sem peso da fazenda') + '</span>' + '<span class="sm">' + (k.pcMed != null ? 'Média no frigorífico ' + esc(f2(k.pcMed)) + ' kg' : 'Sem peso do frigorífico') + '</span>' + lembLinha(l) + '</span>' + resultChip(l, true) + '</span>';
+        return '<span class="lrow"><span class="t">' + esc(t) + curLinha(l) + '<span class="sm">' + (k.pfMed != null ? 'Média na fazenda ' + esc(f2(k.pfMed)) + ' kg' : 'Sem peso da fazenda') + '</span>' + '<span class="sm">' + (k.pcMed != null ? 'Média no frigorífico ' + esc(f2(k.pcMed)) + ' kg' : 'Sem peso do frigorífico') + '</span>' + lembLinha(l) + '</span>' + resultChip(l, true) + '</span>';
       }).join('');
       return '<button type="button" class="card" data-id="' + esc(r.id) + '"' + (S.openId === r.id ? ' aria-current="true"' : '') + '>' +
         (r.frigorifico ? '<span class="frg">' + esc(r.frigorifico) + '</span>' : '') +
         '<span class="row"><span class="nm">' + esc((r.pecuarista || '').trim() || 'Sem nome') + '</span><span class="chip ' + st[1] + '">' + st[0] + '</span></span>' +
+        ((r.fazenda || '').trim() ? '<span class="faz">' + esc(r.fazenda.trim()) + '</span>' : '<span class="faz nov">Fazenda —</span>') +
         '<span class="lots">' + lots + '</span></button>';
     }).join('');
   }
@@ -653,12 +686,14 @@ input[type="date"] { flex: 1 1 0; }
     var box = $(kind === 'pec' ? '#sug' : '#sugf');
     if (!box) return;
     var D = S.draft, cur = norm(D && (kind === 'pec' ? D.pecuarista : D.frigorifico)), q = norm(S.q[kind]), open = S.open[kind], all = namesOf(kind);
+    var chev = box.previousElementSibling && box.previousElementSibling.querySelector('.chev');
+    if (chev) { chev.hidden = !all.length; chev.setAttribute('aria-expanded', open && all.length ? 'true' : 'false'); }
     var sig = [open, q, cur, all.join('|')].join('¦');
     if (box.dataset.sig === sig) return;
     box.dataset.sig = sig;
     var nome = kind === 'pec' ? 'pecuaristas' : 'frigoríficos';
     if (!all.length) { box.innerHTML = ''; return; }
-    if (!open) { box.innerHTML = '<button type="button" class="link sugopen" data-act="sug-open" data-kind="' + kind + '">Ver ' + nome + ' salvos (' + all.length + ')</button>'; return; }
+    if (!open) { box.innerHTML = ''; return; }
     var list = q ? all.filter(function (n) { return norm(n).indexOf(q) >= 0; }) : all;
     var prev = box.querySelector('.sugscroll'), top = prev ? prev.scrollTop : null;
     var html = '', last = '';
@@ -710,7 +745,7 @@ input[type="date"] { flex: 1 1 0; }
     var vis = rows.filter(function (x) {
       if (S.hf === 'pend' && !(x.p.crit.length || x.p.sec.length)) return false;
       if (!q) return true;
-      var hay = norm([x.r.pecuarista, x.r.frigorifico, isoBR(x.r.data), x.r.data, dateLabel(x.r.data)].join(' '));
+      var hay = norm([x.r.pecuarista, x.r.frigorifico, x.r.fazenda, isoBR(x.r.data), x.r.data, dateLabel(x.r.data)].join(' '));
       return hay.indexOf(q) >= 0;
     });
     sum.textContent = rows.length ? rows.length + (rows.length === 1 ? ' abate' : ' abates') + ' · ' + withP + (withP === 1 ? ' com pendência' : ' com pendência') : '';
@@ -726,6 +761,7 @@ input[type="date"] { flex: 1 1 0; }
       html += '<button type="button" class="card" data-hid="' + esc(r.id) + '">' +
         (r.frigorifico ? '<span class="frg">' + esc(r.frigorifico) + '</span>' : '') +
         '<span class="row"><span class="nm">' + esc((r.pecuarista || '').trim() || 'Sem nome') + '</span><span class="chip ' + st[1] + '">' + st[0] + '</span></span>' +
+        ((r.fazenda || '').trim() ? '<span class="faz">' + esc(r.fazenda.trim()) + '</span>' : '') +
         '<span class="sm" style="font-size:13px;color:var(--ink-2)">' + esc(summary(r)) + '</span>' +
         '<span class="legs">' + legs + '</span></button>';
     });
@@ -769,6 +805,9 @@ input[type="date"] { flex: 1 1 0; }
       '<div class="lothead"><div class="lt"><h3>Lote ' + (i + 1) + '</h3><span data-chip="' + i + '"></span></div>' + (n > 1 ? '<button type="button" class="link danger" data-act="rm-lot" data-l="' + i + '">Remover lote</button>' : '') + '</div>' +
       blk(1, 'Informação do abate', 'dia anterior',
         '<div class="seg" role="radiogroup" aria-label="Categoria do lote ' + (i + 1) + '">' + seg + '</div>' +
+        '<div class="row3e">' + field(i, 'arr', 'Valor da arroba (R$)', l.arr, { ph: '0,00', max: 7, c: 'c' }) +
+        field(i, 'prz', 'Prazo (dias)', l.prz, { mode: 'numeric', max: 3, c: 'c' }) +
+        field(i, 'jur', 'Juros prazo (% ao dia)', l.jur, { ph: '0,00', max: 5, c: 'c' }) + '</div>' +
         (l.partes.length ? '<span class="rot">Parte 1</span>' : '') +
         '<div class="row3">' +
         field(i, 'qtd', 'Cabeças', l.qtd, { mode: 'numeric', max: 3, c: 'c' }) +
@@ -807,13 +846,14 @@ input[type="date"] { flex: 1 1 0; }
       return;
     }
     var D = S.draft;
-    if (!ed.querySelector('#pec')) { S.q = { pec: '', frig: '' }; S.open = { pec: false, frig: false }; }
+    if (!ed.querySelector('#pec') || S.edId !== D.id) { S.q = { pec: '', frig: '' }; S.open = { pec: false, frig: false }; S.edId = D.id; }
     ed.innerHTML =
       '<div class="edtop"><button type="button" class="btn back" data-act="back">‹ Lista</button><button type="button" class="link danger" data-act="del">Excluir pecuarista</button></div>' +
-      '<div class="cartao"><label class="f"><span>Frigorífico</span><input id="frig" name="frigorifico-lancamento" data-f="frig" type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" value="' + esc(D.frigorifico) + '" placeholder="Nome do frigorífico"></label>' +
+      '<div class="cartao"><label class="f"><span>Frigorífico</span><span class="fw"><input id="frig" name="frigorifico-lancamento" data-f="frig" type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" value="' + esc(D.frigorifico) + '" placeholder="Nome do frigorífico"><button type="button" class="chev" data-act="sug-toggle" data-kind="frig" aria-label="Ver frigoríficos salvos" aria-expanded="false" hidden>▾</button></span></label>' +
       '<div class="sug" id="sugf"></div>' +
-      '<label class="f"><span>Pecuarista</span><input id="pec" name="pecuarista-lancamento" data-f="name" type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" value="' + esc(D.pecuarista) + '" placeholder="Nome do pecuarista"></label>' +
-      '<div class="sug" id="sug"></div></div>' +
+      '<label class="f"><span>Pecuarista</span><span class="fw"><input id="pec" name="pecuarista-lancamento" data-f="name" type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" value="' + esc(D.pecuarista) + '" placeholder="Nome do pecuarista"><button type="button" class="chev" data-act="sug-toggle" data-kind="pec" aria-label="Ver pecuaristas salvos" aria-expanded="false" hidden>▾</button></span></label>' +
+      '<div class="sug" id="sug"></div>' +
+      '<label class="f"><span>Fazenda</span><input id="faz" name="fazenda-lancamento" data-f="faz" type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" value="' + esc(D.fazenda) + '" placeholder="Fazenda de origem"></label></div>' +
       D.lotes.map(function (l, i) { return lotHTML(l, i, D.lotes.length); }).join('') +
       '<button type="button" class="btn" data-act="add-lot">+ Adicionar lote</button>' +
       '<div class="cartao"><label class="f"><span>Observação (sai no fim da mensagem)</span><input id="obs" data-f="obs" autocomplete="off" value="' + esc(D.obs) + '"></label>' +
@@ -859,8 +899,13 @@ input[type="date"] { flex: 1 1 0; }
       var d = Math.round(k.difMed * 100) / 100;
       if (d === 0) b3 += bub('Resultado', '0,00 kg/cab', 'Igual ao esperado');
       else b3 += bub(d > 0 ? 'Lucro' : 'Prejuízo', signed(d, f2) + ' kg/cab', signed(k.difKg, f2) + ' kg no lote', d > 0 ? 'ok' : 'bad');
+      if (k.valor != null) b3 += bub('Valor do resultado', 'R$ ' + signed(k.valor, f2), signed(k.difKg, f2) + ' kg ÷ 15 × R$ ' + f2(k.arr) + ' a arroba', k.valor >= 0 ? 'ok' : 'bad');
     } else if (k.pc) {
       b3 += bub('Resultado', '—', 'Informe o rendimento esperado no bloco 1');
+    }
+    if (k.desc != null) {
+      b3 += bub('Desconto do adiantamento', '− R$ ' + f2(k.desc), f2(k.jur) + '% ao dia × ' + k.prz + ' dias sobre R$ ' + f2(k.vlote), 'bad');
+      b3 += bub('Valor adiantado', 'R$ ' + f2(k.vlote - k.desc), 'R$ ' + f2(k.vlote) + ' − R$ ' + f2(k.desc), 'key');
     }
     if (k.pctFaz != null) b3 += bub('% Fazenda', f2(k.pctFaz) + '%', 'carcaça ÷ fazenda');
     if (k.pctFrig != null) b3 += bub('% Frigorífico', f2(k.pctFrig) + '%', 'carcaça ÷ entrada');
@@ -1064,6 +1109,9 @@ input[type="date"] { flex: 1 1 0; }
     if (f === 'p.q') f = 'qtd'; else if (f === 'p.pf') f = 'pf'; else if (f === 'p.rend') f = 'rend';
     if (f === 'qtd' || f === 'prec') return v.replace(/\D/g, '').slice(0, 3);
     if (f.indexOf('cur.') === 0) return v.replace(/\D/g, '').slice(0, 2);
+    if (f === 'arr') { var ca = v.replace(/\./g, ',').replace(/[^\d,]/g, ''), ka = ca.indexOf(','); return ka < 0 ? ca.slice(0, 4) : ca.slice(0, Math.min(ka, 4)) + ',' + ca.slice(ka + 1).replace(/,/g, '').slice(0, 2); }
+    if (f === 'prz') return v.replace(/\D/g, '').slice(0, 3);
+    if (f === 'jur') { var cj = v.replace(/\./g, ',').replace(/[^\d,]/g, ''), kj = cj.indexOf(','); return kj < 0 ? cj.slice(0, 2) : cj.slice(0, Math.min(kj, 2)) + ',' + cj.slice(kj + 1).replace(/,/g, '').slice(0, 3); }
     if (f === 'rend') return v.replace(/\./g, ',').replace(/[^\d,]/g, '').slice(0, 4);
     if (f === 'pf') {
       var c = v.replace(/[^\d.,]/g, ''), k = c.indexOf(','), ip = k < 0 ? c : c.slice(0, k), dp = k < 0 ? null : c.slice(k + 1).replace(/\D/g, '').slice(0, 2);
@@ -1102,9 +1150,10 @@ input[type="date"] { flex: 1 1 0; }
       var t = e.target, f = t.dataset.f;
       if (!f || !S.draft) return;
       var D = S.draft;
-      if (f === 'qtd' || f === 'pf' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
-      if (f === 'name') { D.pecuarista = t.value; S.q.pec = t.value; S.open.pec = true; updateSug('pec'); }
-      else if (f === 'frig') { D.frigorifico = t.value; S.q.frig = t.value; S.open.frig = true; updateSug('frig'); }
+      if (f === 'qtd' || f === 'pf' || f === 'arr' || f === 'prz' || f === 'jur' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
+      if (f === 'name') { D.pecuarista = t.value; S.q.pec = t.value; updateSug('pec'); }
+      else if (f === 'frig') { D.frigorifico = t.value; S.q.frig = t.value; updateSug('frig'); }
+      else if (f === 'faz') D.fazenda = t.value;
       else if (f === 'obs') D.obs = t.value;
       else {
         var l = D.lotes[+t.dataset.l];
@@ -1120,8 +1169,6 @@ input[type="date"] { flex: 1 1 0; }
     });
     ed.addEventListener('focusin', function (e) {
       var id = e.target.id;
-      if (id === 'pec') { S.open.pec = true; updateSug('pec'); }
-      else if (id === 'frig') { S.open.frig = true; updateSug('frig'); }
     });
     ed.addEventListener('focusout', function (e) {
       var t = e.target;
@@ -1150,6 +1197,7 @@ input[type="date"] { flex: 1 1 0; }
         var pi = $(isP ? '#pec' : '#frig'); if (pi) pi.value = b.dataset.name;
         touched(); updateSug(kd);
       }
+      else if (a === 'sug-toggle') { var kk = b.dataset.kind; S.open[kk] = !S.open[kk]; if (S.open[kk]) S.q[kk] = ''; updateSug(kk); }
       else if (a === 'sug-open') { S.open[b.dataset.kind] = true; updateSug(b.dataset.kind); }
       else if (a === 'sug-close') { S.open[b.dataset.kind] = false; updateSug(b.dataset.kind); }
       else if (a === 'part-add') { var la = S.draft.lotes[+b.dataset.l]; if (la.partes.length < MAXP) { la.partes.push({ q: '', pf: '', rend: '' }); touched(); renderEditor(); var nf = $('#l' + b.dataset.l + '-p' + (la.partes.length - 1) + '-q'); if (nf) nf.focus(); } }
