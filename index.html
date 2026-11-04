@@ -72,6 +72,7 @@ p { margin: 0 0 10px; line-height: 1.4; }
     document.querySelectorAll('.tabbar button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === t)); });
     try { localStorage.setItem(TK, t); } catch (e) {}
     if (t === 'bkp') renderBkp();
+    if (t === 'aba') { try { $('#f-aba').contentWindow.RC_ABATE.atualizar(); } catch (e) {} }
   }
   document.querySelector('.tabbar').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) go(b.dataset.tab); });
   window.irPara = go;
@@ -108,9 +109,18 @@ p { margin: 0 0 10px; line-height: 1.4; }
       return { frig: l.frigorifico || '', id: l.id, data: l.data, pec: l.pecuarista || '', fazs: nomes.join(', '), cab: cab, peso: peso };
     }).filter(function (r) { return r.cab > 0; }).sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
   }
+  function progs() {
+    var E = readE();
+    return E.progs.map(function (pr) {
+      var m = 0, f = 0; (pr.itens || []).forEach(function (it) { m += +it.B || 0; f += (+it.V || 0) + (+it.N || 0) + (+it.F || 0); });
+      var pesado = E.lotes.some(function (l) { return l.data === pr.data && (!pr.pecuarista || !l.pecuarista || nrm(pr.pecuarista) === nrm(l.pecuarista)) && (l.folhas || []).some(function (f) { return (f.cells || []).length; }); });
+      return { id: pr.id, data: pr.data, pec: pr.pecuarista || '', frig: pr.frigorifico || '', m: m, f: f, cab: m + f, pesado: pesado };
+    }).filter(function (p) { return p.cab > 0; });
+  }
+  function nrm(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
   function abateWin() { return $('#f-aba').contentWindow; }
   window.RC = {
-    romaneios: romaneios, grupos: grupos,
+    romaneios: romaneios, grupos: grupos, progs: progs,
     ligados: function (id) { try { return abateWin().RC_ABATE.ligados(id); } catch (e) { return []; } },
     frigorifico: function () { try { return abateWin().RC_ABATE.frigorifico(); } catch (e) { return ''; } },
     enviar: async function (id, data, frig) { go('aba'); try { return await abateWin().RC_ABATE.novoDoRomaneio({ id: id, data: data, frigorifico: frig }); } catch (e) { return false; } },
