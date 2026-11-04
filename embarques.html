@@ -1063,7 +1063,7 @@ function abateCard(l) {
   let RC = null; try { RC = window.parent !== window && window.parent.RC; } catch (x) {}
   if (!RC || !calc(l, null).cab) return '';
   const d = new Date((l.data || hojeLocal()) + 'T12:00:00'); d.setDate(d.getDate() + 1);
-  const dt = abEnv.d || d.toISOString().slice(0, 10), fr = abEnv.f != null ? abEnv.f : (RC.frigorifico() || '');
+  const dt = abEnv.d || d.toISOString().slice(0, 10), fr = abEnv.f != null ? abEnv.f : (l.frigorifico || RC.frigorifico() || '');
   const lig = RC.ligados(l.id);
   return `<div class="card"><h3>Enviar para o abate</h3>
     <p class="muted small" style="margin:0 0 8px">Cria o abate com as cabeças, o peso da fazenda e o rendimento combinado. No frigorífico você ajusta o que mudar.</p>
@@ -1108,6 +1108,7 @@ function renderDados() {
       <label class="field"><span>Data</span><input class="inp" id="f-data" type="date" data-bind="data" value="${esc(l.data)}"></label>
       <label class="field"><span>Pecuarista</span><input class="inp" id="f-pec" data-bind="pecuarista" value="${esc(l.pecuarista)}" autocomplete="off"></label>
       <label class="field"><span>Comprador</span><input class="inp" id="f-comp" data-bind="comprador" value="${esc(l.comprador)}" autocomplete="off"></label>
+      <label class="field"><span>Frigorífico (destino)</span><input class="inp" id="f-frig" data-bind="frigorifico" value="${esc(l.frigorifico || '')}" placeholder="Ex.: Frigol" autocomplete="off"></label>
       <label class="field"><span>Observação</span><textarea class="inp" id="f-obs" data-bind="obs">${esc(l.obs)}</textarea></label></div>
     <div class="card"><h3>Fazendas do embarque</h3>
       ${l.fazendas.map(z => `<div class="fz"><input class="inp" data-faznome="${z.id}" value="${esc(z.nome)}" placeholder="Nome da fazenda" aria-label="Nome da fazenda">${l.fazendas.length > 1 ? `<button class="btn alt sm" data-act="delfaz" data-id="${z.id}">Remover</button>` : ''}</div>`).join('')}
@@ -1454,6 +1455,7 @@ function renderProgEdit() {
   $('#app').innerHTML = `
     <div class="topbar"><button class="back" data-act="home">‹ Início</button><div class="ttl"><b id="pg-ttl">${esc(pr.pecuarista || 'Novo embarque')}</b><span>${diaSemana(pr.data)}, ${fmtDate(pr.data)}</span></div></div>
     <div class="card"><label class="field"><span>Pecuarista</span><input class="inp" id="pg-pec" value="${esc(pr.pecuarista)}" placeholder="Ex.: Sônia Ramalho" autocapitalize="words"></label>
+      <label class="field"><span>Frigorífico (destino)</span><input class="inp" id="pg-frig" value="${esc(pr.frigorifico || '')}" placeholder="Ex.: Frigol" autocomplete="off"></label>
       <label class="field"><span>Data do embarque</span><input class="inp" type="date" id="pg-data" value="${esc(pr.data)}"></label>
       <h3 style="margin-top:4px">Total programado</h3><div id="pg-tot">${pgTotHtml(pr)}</div></div>
     ${pr.itens.map(it => `<div class="pg-fz" data-it="${it.id}">
@@ -1488,9 +1490,9 @@ document.addEventListener('click', ev => {
   else if (a === 'pgcopydia') pgCopiarTexto(pgResumoDia(t.dataset.d));
   else if (a === 'pgromaneio') { const pr = DB.progs.find(x => x.id === t.dataset.id); if (!pr) return;
     let l = pr.pecuarista ? DB.lotes.find(x => x.data === pr.data && norm(x.pecuarista) === norm(pr.pecuarista)) : null;
-    if (!l) { l = newLote(); l.data = pr.data; l.pecuarista = pr.pecuarista || ''; const nomes = []; pr.itens.forEach(it => { if (it.faz && !nomes.some(n => norm(n) === norm(it.faz))) nomes.push(it.faz); });
+    if (!l) { l = newLote(); l.data = pr.data; l.pecuarista = pr.pecuarista || ''; l.frigorifico = pr.frigorifico || ''; const nomes = []; pr.itens.forEach(it => { if (it.faz && !nomes.some(n => norm(n) === norm(it.faz))) nomes.push(it.faz); });
       if (nomes.length) l.fazendas = nomes.map((n, i) => ({ id: 'f' + (i + 1), nome: n })); DB.lotes.push(l); toast('Romaneio criado com as fazendas e porcentagens da programação'); }
-    l.fazRend = l.fazRend || {};
+    l.fazRend = l.fazRend || {}; if (pr.frigorifico && !l.frigorifico) l.frigorifico = pr.frigorifico;
     pr.itens.forEach(it => { if (!it.faz) return; let z = l.fazendas.find(x => norm(x.nome) === norm(it.faz)); if (!z) { if (l.fazendas.length === 1 && !l.fazendas[0].nome) { z = l.fazendas[0]; z.nome = it.faz; } else { z = { id: uid(), nome: it.faz }; l.fazendas.push(z); } }
       PGR.forEach(([k]) => { const v = it.rend && +it.rend[k]; if (v > 0) { l.fazRend[z.id] = l.fazRend[z.id] || {}; if (!(l.fazRend[z.id][k] > 0)) l.fazRend[z.id][k] = v; if (l.fazendas.length === 1) l.cats[k].rend = v; } }); });
     save();
@@ -1498,6 +1500,7 @@ document.addEventListener('click', ev => {
 });
 document.addEventListener('input', ev => {
   if (view !== 'progedit') return; const t = ev.target, pr = getProg(); if (!pr) return;
+  if (t.id === 'pg-frig') { pr.frigorifico = t.value; save(); return; }
   if (t.id === 'pg-pec') { pr.pecuarista = t.value; save(); document.getElementById('pg-ttl').textContent = pr.pecuarista || 'Novo embarque'; document.querySelectorAll('.pg-fz').forEach(b => { const it = pr.itens.find(x => x.id === b.dataset.it); b.querySelector('.pg-w').innerHTML = pgPwHtml(pr, it); }); return; }
   if (t.id === 'pg-data') { if (t.value) { pr.data = t.value; save(); document.querySelector('.topbar .ttl span').textContent = diaSemana(pr.data) + ', ' + fmtDate(pr.data); document.querySelectorAll('.pg-fz').forEach(b => { const it = pr.itens.find(x => x.id === b.dataset.it); b.querySelector('.pg-w').innerHTML = pgPwHtml(pr, it); }); } return; }
   if (t.dataset.pgr) { const it = pr.itens.find(x => x.id === t.dataset.id); if (!it) return; it.rend = it.rend || {}; if (t.value.trim() === '') delete it.rend[t.dataset.pgr]; else it.rend[t.dataset.pgr] = num(t.value); save(); return; }
@@ -1518,7 +1521,7 @@ document.addEventListener('click', ev => {
     if (t.dataset.act === 'abrirabate') { RC.abrirAbate(t.dataset.id); return; }
     const d = $('#ab-data').value, f = $('#ab-frig').value.trim();
     if (!d) { toast('Informe a data do abate'); return; }
-    abEnv.d = d; abEnv.f = f;
+    abEnv.d = d; abEnv.f = f; if (f && f !== l.frigorifico) { l.frigorifico = f; save(); }
     RC.enviar(l.id, d, f).then(ok => { if (!ok) toast('Não consegui criar o abate'); });
     return;
   }

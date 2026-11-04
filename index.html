@@ -99,13 +99,13 @@ p { margin: 0 0 10px; line-height: 1.4; }
       g.q += c.n; g.pf += c.w;
     }); });
     Object.keys(cats).forEach(function (k) { cats[k].pf = r2(cats[k].pf); cats[k].grupos.forEach(function (g) { g.pf = r2(g.pf); }); });
-    return { id: l.id, nome: (l.pecuarista || 'Sem pecuarista') + ' · ' + (nomes.join(', ') || 'romaneio'), pecuarista: l.pecuarista || '', data: l.data, cats: cats };
+    return { frig: l.frigorifico || '', id: l.id, nome: (l.pecuarista || 'Sem pecuarista') + ' · ' + (nomes.join(', ') || 'romaneio'), pecuarista: l.pecuarista || '', data: l.data, cats: cats };
   }
   function romaneios() {
     return readE().lotes.map(function (l) {
       var cab = 0, peso = 0; (l.folhas || []).forEach(function (f) { (f.cells || []).forEach(function (c) { cab += c.n; peso += c.w; }); });
       var nomes = (l.fazendas || []).map(function (z) { return z.nome; }).filter(Boolean);
-      return { id: l.id, data: l.data, pec: l.pecuarista || '', fazs: nomes.join(', '), cab: cab, peso: peso };
+      return { frig: l.frigorifico || '', id: l.id, data: l.data, pec: l.pecuarista || '', fazs: nomes.join(', '), cab: cab, peso: peso };
     }).filter(function (r) { return r.cab > 0; }).sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
   }
   function abateWin() { return $('#f-aba').contentWindow; }

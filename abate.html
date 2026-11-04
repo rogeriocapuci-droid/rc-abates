@@ -623,14 +623,22 @@ input[type="date"] { flex: 1 1 0; }
     var on = LEMB.filter(function (x) { return l.lem && l.lem[x[0]]; }).map(function (x) { return x[1]; });
     return on.length ? '<span class="sm lemb">Lembrar: ' + esc(on.join(' · ')) + '</span>' : '';
   }
+  function pendRom() {
+    var rc = RCX(); if (!rc || S.loading) return '';
+    var ont = shiftDate(S.date, -1), feito = {};
+    S.all.forEach(function (r) { (r.roms || []).forEach(function (x) { feito[x.id] = 1; }); });
+    var ps = rc.romaneios().filter(function (r) { return r.data === ont && !feito[r.id]; });
+    if (!ps.length) return '';
+    return ps.map(function (r) { return '<div class="cartao" style="border-color:var(--accent)"><b>Embarcou ontem: ' + esc(r.pec || 'Sem pecuarista') + '</b><p class="hint" style="margin:2px 0 8px">' + esc(r.fazs || '') + ' · ' + p0(r.cab) + ' cabeças · ' + p0(r.peso) + ' kg' + (r.frig ? ' · ' + esc(r.frig) : '') + '</p><button type="button" class="btn primary rbtn" style="margin:0" data-act="rom-novo" data-id="' + esc(r.id) + '">Criar abate' + (r.frig ? ' no ' + esc(r.frig) : '') + '</button></div>'; }).join('');
+  }
   function renderList() {
     var box = $('#cards');
     if (S.loading) { box.innerHTML = '<p class="empty">Carregando…</p>'; return; }
     if (!S.recs.length) {
-      box.innerHTML = '<div class="empty"><p>Nenhum pecuarista lançado para ' + esc(dateLabel(S.date)) + '.</p><p>Toque em Novo para lançar o primeiro lote.</p></div>';
+      box.innerHTML = pendRom() + '<div class="empty"><p>Nenhum pecuarista lançado para ' + esc(dateLabel(S.date)) + '.</p><p>Toque em Novo para lançar o primeiro lote.</p></div>';
       return;
     }
-    box.innerHTML = S.recs.map(function (r0) {
+    box.innerHTML = pendRom() + S.recs.map(function (r0) {
       var r = (S.draft && S.draft.id === r0.id) ? S.draft : r0;
       var st = STATUS[recStatus(r)];
       var lots = r.lotes.map(function (l, i) {
@@ -1105,7 +1113,7 @@ input[type="date"] { flex: 1 1 0; }
       else if (b.dataset.bk === 'restore') arm(b, 'Toque de novo para restaurar', async function () { var ok = await S.storage.restore(b.dataset.dia); toast(ok ? 'Backup restaurado' : 'Não foi possível restaurar'); renderBackup(); });
     });
     $('#bkp').addEventListener('change', function (e) { if (e.target.id === 'bkfile') { importBackup(e.target.files[0]); e.target.value = ''; } });
-    $('#cards').addEventListener('click', function (e) { var c = e.target.closest('.card'); if (c) openRec(c.dataset.id); });
+    $('#cards').addEventListener('click', function (e) { var rn = e.target.closest('[data-act=rom-novo]'); if (rn) { RC_ABATE.novoDoRomaneio({ id: rn.dataset.id, data: S.date }); return; } var c = e.target.closest('.card'); if (c) openRec(c.dataset.id); });
 
     var ed = $('#editPane');
     ed.addEventListener('input', function (e) {
@@ -1166,7 +1174,7 @@ input[type="date"] { flex: 1 1 0; }
       else if (a === 'part-rm') arm(b, 'Toque de novo para remover', function () { S.draft.lotes[+b.dataset.l].partes.splice(+b.dataset.p, 1); touched(); renderEditor(); });
       else if (a === 'pc-switch') { var ll = S.draft.lotes[+b.dataset.l]; ll.pcm = ll.pcm === 'media' ? 'total' : 'media'; touched(); renderEditor(); }
       else if (a === 'rom-open') romModal();
-      else if (a === 'rom-avg') { var lr = S.draft.lotes[+b.dataset.l], RR = romCat(lr.cat), qq = num(lr.qtd); if (RR.q && qq != null && !lr.partes.length) { lr.pf = fmtN(Math.round(qq * RR.pf / RR.q * 100) / 100, 0, 2); touched(); renderEditor(); toast('Peso ajustado pela média do romaneio'); } }
+      else if (a === 'rom-avg') { var lr = S.draft.lotes[+b.dataset.l], RR = romSex(SEXO[lr.cat]), qq = num(lr.qtd); if (RR.q && qq != null && !lr.partes.length) { lr.pf = fmtN(Math.round(qq * RR.pf / RR.q * 100) / 100, 0, 2); touched(); renderEditor(); toast('Peso ajustado pela média do romaneio'); } }
       else if (a === 'copy') copyMsg();
       else if (a === 'del') arm(b, 'Toque de novo para excluir', deleteRec);
     });
@@ -1175,6 +1183,9 @@ input[type="date"] { flex: 1 1 0; }
   /* ---------- romaneio (pesos que vêm do app de embarque) ---------- */
   var RCX = function () { try { return (window.parent && window.parent !== window && window.parent.RC) || null; } catch (e) { return null; } };
   var CATN = ['boi', 'vaca', 'novilha', 'touro'];
+  var SEXO = { boi: 'm', touro: 'm', vaca: 'f', novilha: 'f' };
+  var SEXN = { m: ['Machos', 'boi + touro'], f: ['Fêmeas', 'vaca + novilha'] };
+  function romSex(sx) { var t = { q: 0, pf: 0 }; CATN.forEach(function (c) { if (SEXO[c] === sx) { var R = romCat(c); t.q += R.q; t.pf += R.pf; } }); return t; }
   function romCat(cat) { var t = { q: 0, pf: 0 }; ((S.draft && S.draft.roms) || []).forEach(function (r) { var c = r.cats[cat]; if (c) { t.q += c.q; t.pf += c.pf; } }); return t; }
   function defRend(cat) {
     var v = []; ((S.draft && S.draft.roms) || []).forEach(function (r) { ((r.cats[cat] || {}).pct || []).forEach(function (x) { if (v.indexOf(x) < 0) v.push(x); }); });
@@ -1211,7 +1222,7 @@ input[type="date"] { flex: 1 1 0; }
     var rc = RCX(); if (!rc || !S.draft) return;
     var D = S.draft, me = norm(D.pecuarista), done = (D.roms || []).map(function (r) { return r.id; });
     var list = rc.romaneios().slice(0, 60);
-    list.sort(function (a, b) { var ma = me && norm(a.pec) === me ? 0 : 1, mb = me && norm(b.pec) === me ? 0 : 1; return ma - mb || (a.data < b.data ? 1 : a.data > b.data ? -1 : 0); });
+    list.sort(function (a, b) { var ont = shiftDate(S.date, -1), ma = (me && norm(a.pec) === me ? 0 : 2) + (a.data === ont ? 0 : 1), mb = (me && norm(b.pec) === me ? 0 : 2) + (b.data === ont ? 0 : 1); return ma - mb || (a.data < b.data ? 1 : a.data > b.data ? -1 : 0); });
     var pre = null; list.forEach(function (r) { if (!pre && me && norm(r.pec) === me && done.indexOf(r.id) < 0) pre = r.id; });
     var el = document.createElement('div'); el.className = 'rmodal'; el.id = 'rmodal';
     el.innerHTML = '<div class="box"><b>Trazer pesos do romaneio</b><p class="hint">Escolha o(s) romaneio(s). As cabeças, o peso na fazenda e o rendimento combinado entram nos lotes. Depois você ajusta o que o frigorífico classificar diferente.</p>' +
@@ -1233,29 +1244,29 @@ input[type="date"] { flex: 1 1 0; }
     var D = S.draft; if (!D) return;
     D.lotes.forEach(function (l, i) {
       var h = $('[data-rom="' + i + '"]'); if (!h || !l.src) return;
-      var R = romCat(l.cat), k = calc(l), nm = CATS[l.cat][1];
-      var t = 'Do romaneio: ' + p0(R.q) + ' ' + nm + ' · ' + f0(R.pf) + ' kg' + (R.q ? ' (média ' + f0(R.pf / R.q) + ' kg)' : '') + '.';
+      var R = romSex(SEXO[l.cat]), k = calc(l), nm = SEXN[SEXO[l.cat]][0].toLowerCase();
+      var t = 'Do romaneio: ' + p0(R.q) + ' ' + nm + ' (' + SEXN[SEXO[l.cat]][1] + ') · ' + f0(R.pf) + ' kg' + (R.q ? ' · média ' + f0(R.pf / R.q) + ' kg' : '') + '.';
       var dif = k.q != null && R.q && k.q !== R.q;
-      if (dif) t += ' Aqui: ' + p0(k.q) + ' (' + signed(k.q - R.q, p0) + ').';
-      h.innerHTML = esc(t) + (dif && !(l.partes && l.partes.length) ? ' <button type="button" class="link" data-act="rom-avg" data-l="' + i + '">Ajustar peso pela média</button>' : '');
+      if (dif) t += ' Neste lote: ' + p0(k.q) + '.';
+      h.innerHTML = esc(t) + (dif && !(l.partes && l.partes.length) && D.lotes.filter(function (z) { return SEXO[z.cat] === SEXO[l.cat]; }).length === 1 ? ' <button type="button" class="link" data-act="rom-avg" data-l="' + i + '">Ajustar peso pela média</button>' : '');
     });
     var box = $('#romconf'); if (!box) return;
     if (!D.roms || !D.roms.length) { box.hidden = true; box.innerHTML = ''; return; }
-    var A = {}; CATN.forEach(function (k) { A[k] = { q: 0, pf: 0 }; });
-    D.lotes.forEach(function (l) { var k = calc(l); if (A[l.cat]) { A[l.cat].q += k.q || 0; A[l.cat].pf += k.pf || 0; } });
+    var A = { m: { q: 0, pf: 0 }, f: { q: 0, pf: 0 } };
+    D.lotes.forEach(function (l) { var k = calc(l), x = A[SEXO[l.cat]]; if (x) { x.q += k.q || 0; x.pf += k.pf || 0; } });
     var tr = { q: 0, pf: 0 }, ta = { q: 0, pf: 0 };
-    var rows = CATN.map(function (c) {
-      var R = romCat(c), a = A[c]; if (!R.q && !a.q) return '';
+    var rows = ['m', 'f'].map(function (sx) {
+      var R = romSex(sx), a = A[sx]; if (!R.q && !a.q) return '';
       tr.q += R.q; tr.pf += R.pf; ta.q += a.q; ta.pf += a.pf;
       var d = a.q - R.q;
-      return '<tr><td>' + CATS[c][2] + '</td><td class="n">' + p0(R.q) + '<br>' + f0(R.pf) + ' kg</td><td class="n">' + p0(a.q) + '<br>' + f0(a.pf) + ' kg</td><td class="n">' + (d ? signed(d, p0) : '=') + '</td></tr>';
+      return '<tr><td>' + SEXN[sx][0] + '<br><small>' + SEXN[sx][1] + '</small></td><td class="n">' + p0(R.q) + '<br>' + f0(R.pf) + ' kg</td><td class="n">' + p0(a.q) + '<br>' + f0(a.pf) + ' kg</td><td class="n">' + (d ? signed(d, p0) : '=') + '</td></tr>';
     }).join('');
     var dq = ta.q - tr.q, dp = ta.pf - tr.pf;
     box.hidden = false;
     box.innerHTML = '<h4 class="rot">Conferência com o romaneio</h4><p class="hint" style="margin:0 0 6px">' + esc(D.roms.map(function (r) { return r.nome; }).join(' + ')) + '</p>' +
-      '<table class="rtab"><tr><th>Categoria</th><th class="n">Romaneio</th><th class="n">Abate</th><th class="n">Dif.</th></tr>' + rows +
+      '<table class="rtab"><tr><th>Sexo</th><th class="n">Romaneio</th><th class="n">Abate</th><th class="n">Dif.</th></tr>' + rows +
       '<tr><td><b>Total</b></td><td class="n"><b>' + p0(tr.q) + '</b><br>' + f0(tr.pf) + ' kg</td><td class="n"><b>' + p0(ta.q) + '</b><br>' + f0(ta.pf) + ' kg</td><td class="n"><span class="chip ' + (dq || Math.abs(dp) > 0.5 ? 'warn' : 'ok') + '">' + (dq ? signed(dq, p0) + ' cab' : (Math.abs(dp) > 0.5 ? signed(Math.round(dp), p0) + ' kg' : 'ok')) + '</span></td></tr></table>' +
-      '<p class="hint" style="margin:6px 0 0">Se o frigorífico classificar diferente (mais novilha, menos vaca), mude as cabeças em cada lote. O total deve continuar igual ao romaneio.</p>';
+      '<p class="hint" style="margin:6px 0 0">Na fazenda só dá para separar macho e fêmea; vaca ou novilha é no olho. No frigorífico, divida as fêmeas entre vaca e novilha nos lotes. O total por sexo deve fechar com o romaneio.</p>';
   }
   window.RC_ABATE = {
     ligados: function (rid) { return S.all.filter(function (r) { return (r.roms || []).some(function (x) { return x.id === rid; }); }).map(function (r) { return { id: r.id, data: r.data, frigorifico: r.frigorifico }; }); },
@@ -1264,7 +1275,7 @@ input[type="date"] { flex: 1 1 0; }
       var rc = RCX(), g = rc && rc.grupos(o.id); if (!g) return false;
       await closeEditor(); setTab('dia');
       if (S.date !== o.data) { S.date = o.data; renderHeader(); deriveDay(); }
-      var rec = newRec(o.data); rec.frigorifico = o.frigorifico || lastFrig(); rec.roms = []; addRom(rec, g);
+      var rec = newRec(o.data); rec.frigorifico = o.frigorifico || g.frig || lastFrig(); rec.roms = []; addRom(rec, g);
       S.draft = rec; S.openId = rec.id; S.isNew = true; S.dirty = true;
       renderEditor(); renderList(); setView('edit'); window.scrollTo(0, 0); touched();
       return true;
