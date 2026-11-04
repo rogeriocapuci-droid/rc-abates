@@ -76,6 +76,47 @@ p { margin: 0 0 10px; line-height: 1.4; }
   document.querySelector('.tabbar').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) go(b.dataset.tab); });
   window.irPara = go;
 
+  /* ---------- ponte embarque -> abate ---------- */
+  var MAPA = { B: 'boi', C: 'boi', N: 'novilha', V: 'vaca', L: 'vaca', M: 'touro' };
+  function rendDe(l, f, c) {
+    var k = c.cat, fz = c.fz || f.faz, v = f.rend && f.rend[k];
+    if (v !== undefined && v !== null && v !== '' && +v > 0) return +v;
+    var w = l.fazRend && fz && l.fazRend[fz] && l.fazRend[fz][k];
+    if (w !== undefined && w !== null && w !== '' && +w > 0) return +w;
+    return +((l.cats && l.cats[k] && l.cats[k].rend) || 0);
+  }
+  function r2(x) { return Math.round(x * 100) / 100; }
+  function grupos(id) {
+    var l = readE().lotes.filter(function (x) { return x.id === id; })[0]; if (!l) return null;
+    var cats = {}, nomes = [];
+    (l.fazendas || []).forEach(function (z) { if (z.nome) nomes.push(z.nome); });
+    (l.folhas || []).forEach(function (f) { (f.cells || []).forEach(function (c) {
+      var k = MAPA[c.cat]; if (!k) return;
+      var r = rendDe(l, f, c), x = cats[k] || (cats[k] = { q: 0, pf: 0, pct: [], grupos: [] });
+      x.q += c.n; x.pf += c.w;
+      var g = x.grupos.filter(function (y) { return y.rend === r; })[0];
+      if (!g) { g = { q: 0, pf: 0, rend: r }; x.grupos.push(g); if (r > 0 && x.pct.indexOf(r) < 0) x.pct.push(r); }
+      g.q += c.n; g.pf += c.w;
+    }); });
+    Object.keys(cats).forEach(function (k) { cats[k].pf = r2(cats[k].pf); cats[k].grupos.forEach(function (g) { g.pf = r2(g.pf); }); });
+    return { id: l.id, nome: (l.pecuarista || 'Sem pecuarista') + ' · ' + (nomes.join(', ') || 'romaneio'), pecuarista: l.pecuarista || '', data: l.data, cats: cats };
+  }
+  function romaneios() {
+    return readE().lotes.map(function (l) {
+      var cab = 0, peso = 0; (l.folhas || []).forEach(function (f) { (f.cells || []).forEach(function (c) { cab += c.n; peso += c.w; }); });
+      var nomes = (l.fazendas || []).map(function (z) { return z.nome; }).filter(Boolean);
+      return { id: l.id, data: l.data, pec: l.pecuarista || '', fazs: nomes.join(', '), cab: cab, peso: peso };
+    }).filter(function (r) { return r.cab > 0; }).sort(function (a, b) { return a.data < b.data ? 1 : a.data > b.data ? -1 : 0; });
+  }
+  function abateWin() { return $('#f-aba').contentWindow; }
+  window.RC = {
+    romaneios: romaneios, grupos: grupos,
+    ligados: function (id) { try { return abateWin().RC_ABATE.ligados(id); } catch (e) { return []; } },
+    frigorifico: function () { try { return abateWin().RC_ABATE.frigorifico(); } catch (e) { return ''; } },
+    enviar: async function (id, data, frig) { go('aba'); try { return await abateWin().RC_ABATE.novoDoRomaneio({ id: id, data: data, frigorifico: frig }); } catch (e) { return false; } },
+    abrirAbate: async function (id) { go('aba'); try { return await abateWin().RC_ABATE.abrir(id); } catch (e) { return false; } }
+  };
+
   /* ---------- leitura/escrita dos dois bancos (mesma origem) ---------- */
   function readE() { try { var d = JSON.parse(localStorage.getItem(EK)); if (d && Array.isArray(d.lotes)) { d.progs = Array.isArray(d.progs) ? d.progs : []; return d; } } catch (e) {} return { lotes: [], progs: [] }; }
   function readA() { try { var m = JSON.parse(localStorage.getItem(AK)); return (m && m.recs) || {}; } catch (e) { return {}; } }

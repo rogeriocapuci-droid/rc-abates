@@ -1059,9 +1059,23 @@ function descCard(l) {
     <div class="seg" role="group" aria-label="Qual desconto aplicar" style="width:100%">${op.map(o => `<button style="flex:1;padding:0 4px" data-act="desc" data-v="${o[0]}" aria-pressed="${v === o[0]}">${o[1]}</button>`).join('')}</div>
     <p class="muted small" style="margin:8px 0 0">Funrural ${nf2.format(l.funrural)}% · Senar ${nf2.format(l.senar)}%. Os percentuais ficam em Dados.</p></div>`;
 }
+function abateCard(l) {
+  let RC = null; try { RC = window.parent !== window && window.parent.RC; } catch (x) {}
+  if (!RC || !calc(l, null).cab) return '';
+  const d = new Date((l.data || hojeLocal()) + 'T12:00:00'); d.setDate(d.getDate() + 1);
+  const dt = abEnv.d || d.toISOString().slice(0, 10), fr = abEnv.f != null ? abEnv.f : (RC.frigorifico() || '');
+  const lig = RC.ligados(l.id);
+  return `<div class="card"><h3>Enviar para o abate</h3>
+    <p class="muted small" style="margin:0 0 8px">Cria o abate com as cabeças, o peso da fazenda e o rendimento combinado. No frigorífico você ajusta o que mudar.</p>
+    ${lig.length ? `<p class="small" style="margin:0 0 8px">Já enviado: ${lig.map(x => `<a href="#" data-act="abrirabate" data-id="${esc(x.id)}">${fmtDate(x.data)}${x.frigorifico ? ' · ' + esc(x.frigorifico) : ''}</a>`).join(' · ')}</p>` : ''}
+    <div class="row"><label class="field" style="flex:1"><span>Data do abate</span><input class="inp" type="date" id="ab-data" value="${dt}"></label>
+    <label class="field" style="flex:1"><span>Frigorífico</span><input class="inp" id="ab-frig" value="${esc(fr)}" autocomplete="off"></label></div>
+    <button class="btn gold" data-act="toabate" style="width:100%;margin-top:8px">${lig.length ? 'Criar outro abate' : 'Enviar para o abate'}</button></div>`;
+}
+const abEnv = {};
 function renderFech() {
   const l = cur(); const c = calc(l, null);
-  let h = `<div class="row" style="margin-top:6px"><button class="btn gold" data-act="pdf" style="flex:1">Gerar PDF</button><button class="btn alt" data-act="copy" style="flex:1">Copiar resumo</button></div>`;
+  let h = abateCard(l) + `<div class="row" style="margin-top:6px"><button class="btn gold" data-act="pdf" style="flex:1">Gerar PDF</button><button class="btn alt" data-act="copy" style="flex:1">Copiar resumo</button></div>`;
   h += descCard(l);
   h += missing(l, c);
   if (!c.cab) h += `<div class="notice">Nenhum peso lançado ainda. Use a aba Pesagem.</div>`;
@@ -1499,6 +1513,15 @@ document.addEventListener('input', ev => {
 let armed = null;
 document.addEventListener('click', ev => {
   const t = ev.target.closest('[data-act]'); if (!t) return;
+  if (t.dataset.act === 'toabate' || t.dataset.act === 'abrirabate') {
+    ev.preventDefault(); const RC = window.parent.RC, l = cur(); if (!RC || !l) return;
+    if (t.dataset.act === 'abrirabate') { RC.abrirAbate(t.dataset.id); return; }
+    const d = $('#ab-data').value, f = $('#ab-frig').value.trim();
+    if (!d) { toast('Informe a data do abate'); return; }
+    abEnv.d = d; abEnv.f = f;
+    RC.enviar(l.id, d, f).then(ok => { if (!ok) toast('Não consegui criar o abate'); });
+    return;
+  }
   const a = t.dataset.act, l = cur();
   switch (a) {
     case 'novo': { const n = newLote(); DB.lotes.push(n); save(); curId = n.id; tab = 'dad'; K.sel = null; K.folha = null; K.faz = null; K.buf = ''; renderEditor(); break; }

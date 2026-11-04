@@ -136,6 +136,17 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .chip.warn { background: var(--warn-soft); color: var(--warn); }
 .chip.bad { background: var(--bad-soft); color: var(--bad); }
 .chip.none { background: transparent; color: var(--ink-2); border: 1px solid var(--line); font-weight: 500; }
+.rmodal { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 80; display: grid; place-items: center; padding: 14px; }
+.rmodal .box { background: var(--surface); color: var(--ink); border-radius: 14px; padding: 14px; width: min(560px, 100%); max-height: 88vh; overflow: auto; display: grid; gap: 10px; }
+.rom-opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.rom-opt input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
+.rom-opt.off { opacity: .55; }
+.rom-opt small { color: var(--ink-2); display: block; }
+.rtab { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rtab th { text-align: left; font-weight: 600; color: var(--ink-2); padding: 4px 4px 4px 0; }
+.rtab td { padding: 5px 4px 5px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.rtab td.n, .rtab th.n { text-align: right; padding-right: 0; padding-left: 6px; font-variant-numeric: tabular-nums; }
+.rbtn { width: 100%; margin-top: 10px; }
 .empty { color: var(--ink-2); padding: 20px 3px; display: grid; gap: 5px; }
 
 /* backup */
@@ -777,7 +788,7 @@ input[type="date"] { flex: 1 1 0; }
         }).join('') +
         (l.partes.length ? '<p class="hint" data-parts="' + i + '"></p>' : '') +
         (l.partes.length < MAXP ? '<button type="button" class="link r2add" data-act="part-add" data-l="' + i + '">+ Parte do lote com outro rendimento' + (l.partes.length ? ' (' + l.partes.length + ' de ' + MAXP + ')' : '') + '</button>' : '<p class="hint">Máximo de ' + (MAXP + 1) + ' partes por lote.</p>'),
-        '<div class="sec after"><h4>Conferir no abate <small>marque o que conferir</small></h4><div class="lembs">' + lemb + '</div></div>') +
+        (l.src ? '<p class="hint" data-rom="' + i + '"></p>' : '') + '<div class="sec after"><h4>Conferir no abate <small>marque o que conferir</small></h4><div class="lembs">' + lemb + '</div></div>') +
       blk(2, 'Peso de entrada', 'com sequência e curral',
         '<div class="grid">' + field(i, 'pe', 'Peso de entrada (kg, total)', l.pe, { w: 1 }) + '</div>' +
         '<div class="grid">' +
@@ -810,7 +821,8 @@ input[type="date"] { flex: 1 1 0; }
       '<div class="cartao"><label class="f"><span>Frigorífico</span><input id="frig" name="frigorifico-lancamento" data-f="frig" type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" value="' + esc(D.frigorifico) + '" placeholder="Nome do frigorífico"></label>' +
       '<div class="sug" id="sugf"></div>' +
       '<label class="f"><span>Pecuarista</span><input id="pec" name="pecuarista-lancamento" data-f="name" type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" value="' + esc(D.pecuarista) + '" placeholder="Nome do pecuarista"></label>' +
-      '<div class="sug" id="sug"></div></div>' +
+      '<div class="sug" id="sug"></div>' + (RCX() ? '<button type="button" class="btn rbtn" data-act="rom-open">Trazer pesos do romaneio</button>' : '') + '</div>' +
+      '<div class="cartao" id="romconf" hidden></div>' +
       D.lotes.map(function (l, i) { return lotHTML(l, i, D.lotes.length); }).join('') +
       '<button type="button" class="btn" data-act="add-lot">+ Adicionar lote</button>' +
       '<div class="cartao"><label class="f"><span>Observação (sai no fim da mensagem)</span><input id="obs" data-f="obs" autocomplete="off" value="' + esc(D.obs) + '"></label>' +
@@ -897,6 +909,7 @@ input[type="date"] { flex: 1 1 0; }
         h.classList.toggle('warn', warn);
       }
     });
+    romUpdate();
     var msg = buildMsg(D);
     var pre = $('#msg');
     if (pre) pre.textContent = msg || 'Nenhum lote fechado ainda. Informe o peso do frigorífico para o lote entrar na mensagem.';
@@ -1105,7 +1118,7 @@ input[type="date"] { flex: 1 1 0; }
       else if (f === 'obs') D.obs = t.value;
       else {
         var l = D.lotes[+t.dataset.l];
-        if (f === 'cat') { l.cat = t.value; touched(); renderEditor(); return; }
+        if (f === 'cat') { l.cat = t.value; if (!String(l.rend).trim()) { var dr0 = defRend(t.value); if (dr0) l.rend = dr0; } touched(); renderEditor(); return; }
         if (f === 'pcm') { l.pcm = t.value; touched(); renderEditor(); return; }
         if (f.indexOf('p.') === 0) l.partes[+t.dataset.p][f.slice(2)] = t.value;
         else if (f.indexOf('bez.') === 0) l.bez[f.slice(4)] = t.value;
@@ -1138,7 +1151,7 @@ input[type="date"] { flex: 1 1 0; }
       if (!b || !S.draft) return;
       var a = b.dataset.act;
       if (a === 'back') closeEditor();
-      else if (a === 'add-lot') { S.draft.lotes.push(newLot()); touched(); renderEditor(); }
+      else if (a === 'add-lot') { var nl0 = newLot(); var dr1 = defRend('boi'); if (dr1) nl0.rend = dr1; S.draft.lotes.push(nl0); touched(); renderEditor(); }
       else if (a === 'rm-lot') arm(b, 'Toque de novo para remover', function () { S.draft.lotes.splice(+b.dataset.l, 1); touched(); renderEditor(); });
       else if (a === 'pick') {
         var kd = b.dataset.kind, isP = kd === 'pec';
@@ -1152,10 +1165,112 @@ input[type="date"] { flex: 1 1 0; }
       else if (a === 'part-add') { var la = S.draft.lotes[+b.dataset.l]; if (la.partes.length < MAXP) { la.partes.push({ q: '', pf: '', rend: '' }); touched(); renderEditor(); var nf = $('#l' + b.dataset.l + '-p' + (la.partes.length - 1) + '-q'); if (nf) nf.focus(); } }
       else if (a === 'part-rm') arm(b, 'Toque de novo para remover', function () { S.draft.lotes[+b.dataset.l].partes.splice(+b.dataset.p, 1); touched(); renderEditor(); });
       else if (a === 'pc-switch') { var ll = S.draft.lotes[+b.dataset.l]; ll.pcm = ll.pcm === 'media' ? 'total' : 'media'; touched(); renderEditor(); }
+      else if (a === 'rom-open') romModal();
+      else if (a === 'rom-avg') { var lr = S.draft.lotes[+b.dataset.l], RR = romCat(lr.cat), qq = num(lr.qtd); if (RR.q && qq != null && !lr.partes.length) { lr.pf = fmtN(Math.round(qq * RR.pf / RR.q * 100) / 100, 0, 2); touched(); renderEditor(); toast('Peso ajustado pela média do romaneio'); } }
       else if (a === 'copy') copyMsg();
       else if (a === 'del') arm(b, 'Toque de novo para excluir', deleteRec);
     });
   }
+
+  /* ---------- romaneio (pesos que vêm do app de embarque) ---------- */
+  var RCX = function () { try { return (window.parent && window.parent !== window && window.parent.RC) || null; } catch (e) { return null; } };
+  var CATN = ['boi', 'vaca', 'novilha', 'touro'];
+  function romCat(cat) { var t = { q: 0, pf: 0 }; ((S.draft && S.draft.roms) || []).forEach(function (r) { var c = r.cats[cat]; if (c) { t.q += c.q; t.pf += c.pf; } }); return t; }
+  function defRend(cat) {
+    var v = []; ((S.draft && S.draft.roms) || []).forEach(function (r) { ((r.cats[cat] || {}).pct || []).forEach(function (x) { if (v.indexOf(x) < 0) v.push(x); }); });
+    return v.length === 1 ? String(v[0]).replace('.', ',') : '';
+  }
+  function snapRom(g) { var c = {}; CATN.forEach(function (k) { var x = g.cats[k]; if (x) c[k] = { q: x.q, pf: x.pf, pct: x.pct || [] }; }); return { id: g.id, nome: g.nome, cats: c }; }
+  function lotsFromRom(g) {
+    var out = [];
+    CATN.forEach(function (k) {
+      var x = g.cats[k]; if (!x || !x.grupos || !x.grupos.length) return;
+      var gs = x.grupos.slice().sort(function (a, b) { return b.q - a.q; });
+      for (var i = 0; i < gs.length; i += MAXP + 1) {
+        var ch = gs.slice(i, i + MAXP + 1), l = newLot(k);
+        l.qtd = String(ch[0].q); l.pf = fmtN(ch[0].pf, 0, 2); l.rend = String(ch[0].rend).replace('.', ',');
+        l.partes = ch.slice(1).map(function (p) { return { q: String(p.q), pf: fmtN(p.pf, 0, 2), rend: String(p.rend).replace('.', ',') }; });
+        l.src = { rid: g.id, cat: k };
+        out.push(l);
+      }
+    });
+    return out;
+  }
+  function lotEmpty(l) { return !String(l.qtd).trim() && !String(l.pf).trim() && !String(l.rend).trim() && !String(l.pe).trim() && !String(l.pc).trim() && !(l.partes && l.partes.length); }
+  function addRom(D, g) {
+    if ((D.roms || []).some(function (r) { return r.id === g.id; })) return false;
+    D.roms = (D.roms || []).concat([snapRom(g)]);
+    var ls = lotsFromRom(g);
+    if (D.lotes.length === 1 && lotEmpty(D.lotes[0])) D.lotes = [];
+    D.lotes = D.lotes.concat(ls);
+    if (!D.lotes.length) D.lotes = [newLot()];
+    if (!String(D.pecuarista || '').trim()) D.pecuarista = g.pecuarista || '';
+    return true;
+  }
+  function romModal() {
+    var rc = RCX(); if (!rc || !S.draft) return;
+    var D = S.draft, me = norm(D.pecuarista), done = (D.roms || []).map(function (r) { return r.id; });
+    var list = rc.romaneios().slice(0, 60);
+    list.sort(function (a, b) { var ma = me && norm(a.pec) === me ? 0 : 1, mb = me && norm(b.pec) === me ? 0 : 1; return ma - mb || (a.data < b.data ? 1 : a.data > b.data ? -1 : 0); });
+    var pre = null; list.forEach(function (r) { if (!pre && me && norm(r.pec) === me && done.indexOf(r.id) < 0) pre = r.id; });
+    var el = document.createElement('div'); el.className = 'rmodal'; el.id = 'rmodal';
+    el.innerHTML = '<div class="box"><b>Trazer pesos do romaneio</b><p class="hint">Escolha o(s) romaneio(s). As cabeças, o peso na fazenda e o rendimento combinado entram nos lotes. Depois você ajusta o que o frigorífico classificar diferente.</p>' +
+      (list.length ? list.map(function (r) { var off = done.indexOf(r.id) >= 0; return '<label class="rom-opt' + (off ? ' off' : '') + '"><input type="checkbox" value="' + esc(r.id) + '"' + (off ? ' disabled' : r.id === pre ? ' checked' : '') + '><span><b>' + esc(r.pec || 'Sem pecuarista') + '</b><small>' + esc(isoBR(r.data)) + ' · ' + esc(r.fazs || 'sem fazenda') + '</small><small>' + p0(r.cab) + ' cabeças · ' + p0(r.peso) + ' kg' + (off ? ' · já trazido' : '') + '</small></span></label>'; }).join('') : '<p class="hint warn">Nenhum romaneio com pesos neste aparelho ainda.</p>') +
+      '<div class="actions"><button type="button" class="btn grow" data-rm="x">Cancelar</button><button type="button" class="btn primary grow" data-rm="ok">Trazer</button></div></div>';
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-rm]');
+      if (e.target === el || (b && b.dataset.rm === 'x')) { el.remove(); return; }
+      if (b && b.dataset.rm === 'ok') {
+        var ids = Array.prototype.slice.call(el.querySelectorAll('input:checked')).map(function (i) { return i.value; }), n = 0;
+        ids.forEach(function (id) { var g = rc.grupos(id); if (g && addRom(S.draft, g)) n++; });
+        el.remove();
+        if (n) { touched(); renderEditor(); toast(n === 1 ? 'Romaneio trazido' : n + ' romaneios trazidos'); }
+      }
+    });
+    document.body.appendChild(el);
+  }
+  function romUpdate() {
+    var D = S.draft; if (!D) return;
+    D.lotes.forEach(function (l, i) {
+      var h = $('[data-rom="' + i + '"]'); if (!h || !l.src) return;
+      var R = romCat(l.cat), k = calc(l), nm = CATS[l.cat][1];
+      var t = 'Do romaneio: ' + p0(R.q) + ' ' + nm + ' · ' + f0(R.pf) + ' kg' + (R.q ? ' (média ' + f0(R.pf / R.q) + ' kg)' : '') + '.';
+      var dif = k.q != null && R.q && k.q !== R.q;
+      if (dif) t += ' Aqui: ' + p0(k.q) + ' (' + signed(k.q - R.q, p0) + ').';
+      h.innerHTML = esc(t) + (dif && !(l.partes && l.partes.length) ? ' <button type="button" class="link" data-act="rom-avg" data-l="' + i + '">Ajustar peso pela média</button>' : '');
+    });
+    var box = $('#romconf'); if (!box) return;
+    if (!D.roms || !D.roms.length) { box.hidden = true; box.innerHTML = ''; return; }
+    var A = {}; CATN.forEach(function (k) { A[k] = { q: 0, pf: 0 }; });
+    D.lotes.forEach(function (l) { var k = calc(l); if (A[l.cat]) { A[l.cat].q += k.q || 0; A[l.cat].pf += k.pf || 0; } });
+    var tr = { q: 0, pf: 0 }, ta = { q: 0, pf: 0 };
+    var rows = CATN.map(function (c) {
+      var R = romCat(c), a = A[c]; if (!R.q && !a.q) return '';
+      tr.q += R.q; tr.pf += R.pf; ta.q += a.q; ta.pf += a.pf;
+      var d = a.q - R.q;
+      return '<tr><td>' + CATS[c][2] + '</td><td class="n">' + p0(R.q) + '<br>' + f0(R.pf) + ' kg</td><td class="n">' + p0(a.q) + '<br>' + f0(a.pf) + ' kg</td><td class="n">' + (d ? signed(d, p0) : '=') + '</td></tr>';
+    }).join('');
+    var dq = ta.q - tr.q, dp = ta.pf - tr.pf;
+    box.hidden = false;
+    box.innerHTML = '<h4 class="rot">Conferência com o romaneio</h4><p class="hint" style="margin:0 0 6px">' + esc(D.roms.map(function (r) { return r.nome; }).join(' + ')) + '</p>' +
+      '<table class="rtab"><tr><th>Categoria</th><th class="n">Romaneio</th><th class="n">Abate</th><th class="n">Dif.</th></tr>' + rows +
+      '<tr><td><b>Total</b></td><td class="n"><b>' + p0(tr.q) + '</b><br>' + f0(tr.pf) + ' kg</td><td class="n"><b>' + p0(ta.q) + '</b><br>' + f0(ta.pf) + ' kg</td><td class="n"><span class="chip ' + (dq || Math.abs(dp) > 0.5 ? 'warn' : 'ok') + '">' + (dq ? signed(dq, p0) + ' cab' : (Math.abs(dp) > 0.5 ? signed(Math.round(dp), p0) + ' kg' : 'ok')) + '</span></td></tr></table>' +
+      '<p class="hint" style="margin:6px 0 0">Se o frigorífico classificar diferente (mais novilha, menos vaca), mude as cabeças em cada lote. O total deve continuar igual ao romaneio.</p>';
+  }
+  window.RC_ABATE = {
+    ligados: function (rid) { return S.all.filter(function (r) { return (r.roms || []).some(function (x) { return x.id === rid; }); }).map(function (r) { return { id: r.id, data: r.data, frigorifico: r.frigorifico }; }); },
+    abrir: async function (id) { var r = S.all.find(function (x) { return x.id === id; }); if (!r) return false; await closeEditor(); setTab('dia'); if (S.date !== r.data) await changeDate(r.data); await openRec(id); return true; },
+    novoDoRomaneio: async function (o) {
+      var rc = RCX(), g = rc && rc.grupos(o.id); if (!g) return false;
+      await closeEditor(); setTab('dia');
+      if (S.date !== o.data) { S.date = o.data; renderHeader(); deriveDay(); }
+      var rec = newRec(o.data); rec.frigorifico = o.frigorifico || lastFrig(); rec.roms = []; addRom(rec, g);
+      S.draft = rec; S.openId = rec.id; S.isNew = true; S.dirty = true;
+      renderEditor(); renderList(); setView('edit'); window.scrollTo(0, 0); touched();
+      return true;
+    },
+    frigorifico: function () { return lastFrig(); }
+  };
 
   /* ---------- dados do dia ---------- */
   async function changeDate(d) {
