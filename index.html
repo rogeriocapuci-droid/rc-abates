@@ -100,7 +100,7 @@ p { margin: 0 0 10px; line-height: 1.4; }
     }
     function fecha(cs) { Object.keys(cs).forEach(function (k) { cs[k].preco = cs[k]._pw ? r2(cs[k]._pp / cs[k]._pw) : 0; delete cs[k]._pp; delete cs[k]._pw; cs[k].pf = r2(cs[k].pf); cs[k].grupos.forEach(function (g) { g.pf = r2(g.pf); }); }); }
     (l.folhas || []).forEach(function (f) { (f.cells || []).forEach(function (c) {
-      var k = MAPA[c.cat]; if (!k) return;
+      var k = MAPA[c.cat]; if (!k || c.skip || !(+c.n > 0) || !(+c.w > 0)) return;
       var r = rendDe(l, f, c), fid = c.fz || f.faz;
       acum(cats, k, c, r); acum(porF[fid] || (porF[fid] = {}), k, c, r);
     }); });
