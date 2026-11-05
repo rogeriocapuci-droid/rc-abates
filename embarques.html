@@ -1216,7 +1216,7 @@ function resumoTexto(l) {
     const p = c.per[k];
     L.push(`${l.cats[k].nome}: ${nf0.format(p.cab)} cab · ${nf0.format(p.peso)} kg · rend ${nf2.format(p.rend)}% · ${nf2.format(p.arr)} @ x ${brl(+l.cats[k].preco || 0)} = ${brl(p.valor)}`);
   });
-  L.push('', `Total: ${nf0.format(c.cab)} cab · ${nf0.format(c.peso)} kg vivo · ${nf2.format(c.arr)} @`, `Bruto: ${brl(c.bruto)}`, ...(l.useFun === false ? [] : [`Funrural ${nf2.format(l.funrural)}%: - ${brl(c.fun)}`]), ...(l.useSen === false ? [] : [`Senar ${nf2.format(l.senar)}%: - ${brl(c.sen)}`]));
+  L.push('', `Total: ${nf0.format(c.cab)} cab · ${nf0.format(c.peso)} kg vivo`, `Bruto: ${brl(c.bruto)}`, ...(l.useFun === false ? [] : [`Funrural ${nf2.format(l.funrural)}%: - ${brl(c.fun)}`]), ...(l.useSen === false ? [] : [`Senar ${nf2.format(l.senar)}%: - ${brl(c.sen)}`]));
   if (c.ajuste) L.push(`Desconto: - ${brl(c.ajuste)}`);
   L.push(`*Líquido: ${brl(c.liquido)}*`);
   if (l.fazendas.length > 1) { L.push('', 'Por fazenda:'); l.fazendas.forEach(z => { const x = calc(l, z.id); if (x.cab) L.push(`${z.nome || 'Sem nome'}: ${nf0.format(x.cab)} cab · ${nf0.format(x.peso)} kg · líquido ${brl(x.liquido)}`); }); }
