@@ -839,11 +839,13 @@ function renderHome() {
   DB.lotes.forEach(l => { (dias[l.data || ''] = dias[l.data || ''] || { progs: [], lotes: [] }).lotes.push(l); });
   const keys = Object.keys(dias);
   const prox = keys.filter(k => k >= hoje).sort(), ant = keys.filter(k => k < hoje).sort().reverse();
-  const cardProg = p => { const t = pgTot(p); return `<div class="lote"><button class="lote-main" data-act="pgabrir" data-id="${p.id}">
-        <b>${esc(p.pecuarista || 'Sem pecuarista')}<span class="tag pg">programado</span></b>
+  const stLinha = p => { const q = pgStatus(p); return q.st === 'fechado' ? `<div class="l3" style="color:var(--green);font-weight:700">✓ Gado pesado · ${q.plan} de ${q.plan}</div>` : q.st === 'excedeu' ? `<div class="l3" style="color:var(--danger);font-weight:700">Pesado · ${q.exc} a mais que o programado</div>` : q.st === 'pesando' ? `<div class="l3" style="color:var(--warn);font-weight:700">Pesando · ${q.got} de ${q.plan} · faltam ${q.falta}</div>` : ''; };
+  const cardProg = p => { const t = pgTot(p); return `<div class="lote"${pgStatus(p).st === 'fechado' ? ' style="border-color:var(--green)"' : ''}><button class="lote-main" data-act="pgabrir" data-id="${p.id}">
+        <b>${esc(p.pecuarista || 'Sem pecuarista')}<span class="tag pg">${pgStatus(p).st === 'fechado' ? 'pesado ✓' : 'programado'}</span></b>
         <div class="l2">${esc(p.itens.map(i => i.faz || 'Sem nome').join(' + ') || 'Sem fazendas')}</div>
-        <div class="l3">${t.all} animais${t.B ? ' · ' + t.B + ' bois' : ''}${(t.V + t.N + t.F) ? ' · ' + (t.V + t.N + t.F) + ' fêmeas' : ''}</div></button>
-        <div class="lote-side"><button class="lote-del go" data-act="pgromaneio" data-id="${p.id}">Pesar</button>
+        <div class="l3">${t.all} animais${t.B ? ' · ' + t.B + ' bois' : ''}${(t.V + t.N + t.F) ? ' · ' + (t.V + t.N + t.F) + ' fêmeas' : ''}</div>
+        ${stLinha(p)}</button>
+        <div class="lote-side"><button class="lote-del go" data-act="pgromaneio" data-id="${p.id}">${pgStatus(p).st === 'fechado' ? 'Ver' : 'Pesar'}</button>
         <button class="lote-del" data-act="pgdel" data-id="${p.id}">Excluir</button></div></div>`; };
   const cardLote = l => { const c = calc(l, null); return `<div class="lote"><button class="lote-main" data-act="abrir" data-id="${l.id}">
         <b>${esc(l.pecuarista || 'Sem pecuarista')}${l.exemplo ? '<span class="tag">exemplo</span>' : ''}<span class="tag">romaneio</span></b>
@@ -1480,14 +1482,32 @@ function pgTotHtml(pr) {
   const t = pgTot(pr);
   return `<div class="pg-tot"><div><b>${t.B}</b><span>Bois</span></div><div><b>${t.V}</b><span>Vacas</span></div><div><b>${t.N}</b><span>Novilhas</span></div><div><b>${t.F}</b><span>Fêmeas</span></div><div><b>${t.all}</b><span>Total</span></div></div>`;
 }
+function pgLinhas(pr, it) {
+  const w = pgPesado(pr, it), L = [];
+  if (+it.B) L.push({ n: 'Bois', plan: +it.B, got: w.B });
+  if (+it.F) L.push({ n: 'Fêmeas', plan: (+it.V || 0) + (+it.N || 0) + (+it.F || 0), got: w.V + w.N, det: (w.V || w.N) ? ' (' + [w.V ? w.V + ' vacas' : '', w.N ? w.N + ' novilhas' : ''].filter(Boolean).join(' + ') + ')' : '' });
+  else { if (+it.V) L.push({ n: 'Vacas', plan: +it.V, got: w.V }); if (+it.N) L.push({ n: 'Novilhas', plan: +it.N, got: w.N }); }
+  return { w, L };
+}
 function pgPwHtml(pr, it) {
   if (!pgSoma(it)) return '';
-  const w = pgPesado(pr, it);
+  const { w, L } = pgLinhas(pr, it);
   if (!w.achou) return '<div class="pg-pw muted">Sem pesagem lançada para esta fazenda neste dia.</div>';
-  return '<div class="pg-pw">' + PG.filter(([k]) => +it[k]).map(([k, n]) => {
-    const m = +it[k], f = m - w[k]; const c = f === 0 ? 'ok' : f > 0 ? 'falta' : 'exc';
-    return `<span class="${c}">${n}: ${w[k]}/${m}${f > 0 ? ' · faltam ' + f : f < 0 ? ' · +' + (-f) + ' a mais' : ' ✓'}</span>`;
-  }).join('') + '</div>';
+  return '<div class="pg-pw">' + L.map(x => { const f = x.plan - x.got; const c = f === 0 ? 'ok' : f > 0 ? 'falta' : 'exc';
+    return `<span class="${c}">${x.n}: ${x.got}/${x.plan}${x.det || ''}${f > 0 ? ' · faltam ' + f : f < 0 ? ' · +' + (-f) + ' a mais' : ' ✓'}</span>`; }).join('') + '</div>';
+}
+function pgStHtml(pr) { const q = pgStatus(pr);
+  if (q.st === 'fechado') return `<div class="notice" style="border-color:var(--green);color:var(--green);font-weight:700">✓ Gado pesado e fechado: ${q.plan} de ${q.plan} animais</div>`;
+  if (q.st === 'excedeu') return `<div class="notice" style="font-weight:700">Pesagem fechou com ${q.exc} animais a mais que o programado</div>`;
+  if (q.st === 'pesando') return `<div class="notice" style="font-weight:700">Pesando: ${q.got} de ${q.plan} · faltam ${q.falta}</div>`;
+  return ''; }
+/* situação geral da programação: nada | pesando | fechado | excedeu */
+function pgStatus(pr) {
+  let any = false, falta = 0, exc = 0, plan = 0, got = 0;
+  pr.itens.forEach(it => { if (!pgSoma(it)) return; const { w, L } = pgLinhas(pr, it); if (w.achou) any = true;
+    L.forEach(x => { plan += x.plan; got += Math.min(x.got, x.plan); if (x.got < x.plan) falta += x.plan - x.got; if (x.got > x.plan) exc += x.got - x.plan; }); });
+  if (!plan) return { st: 'nada', falta, exc, plan, got };
+  return { st: !any ? 'nada' : (falta === 0 && exc === 0) ? 'fechado' : falta === 0 ? 'excedeu' : 'pesando', falta, exc, plan, got };
 }
 function renderProgEdit() {
   view = 'progedit';
@@ -1498,7 +1518,7 @@ function renderProgEdit() {
     <div class="card"><label class="field"><span>Pecuarista</span><input class="inp" id="pg-pec" value="${esc(pr.pecuarista)}" placeholder="Ex.: Sônia Ramalho" autocapitalize="words"></label>
       <label class="field"><span>Frigorífico (destino)</span><input class="inp" id="pg-frig" value="${esc(pr.frigorifico || '')}" placeholder="Ex.: Frigol" autocomplete="off"></label>
       <label class="field"><span>Data do embarque</span><input class="inp" type="date" id="pg-data" value="${esc(pr.data)}"></label>
-      <h3 style="margin-top:4px">Total programado</h3><div id="pg-tot">${pgTotHtml(pr)}</div></div>
+      <div id="pg-st">${pgStHtml(pr)}</div><h3 style="margin-top:4px">Total programado</h3><div id="pg-tot">${pgTotHtml(pr)}</div></div>
     ${pr.itens.map(it => `<div class="pg-fz" data-it="${it.id}">
       <div class="row" style="flex-wrap:nowrap"><label class="field" style="flex:1;margin:0"><span>Fazenda</span><input class="inp" data-pgf="faz" data-id="${it.id}" value="${esc(it.faz)}" placeholder="Nome da fazenda" autocapitalize="words"></label></div>
       <label class="field" style="margin:8px 0 0"><span>Embarca em (se for outra fazenda)</span><input class="inp" data-pgf="local" data-id="${it.id}" value="${esc(it.local)}" placeholder="Ex.: Aurora III" autocapitalize="words"></label>
@@ -1549,7 +1569,7 @@ document.addEventListener('input', ev => {
   if (f === 'faz' || f === 'local') it[f] = t.value;
   else { const v = t.value.replace(/\D/g, '').slice(0, 4); if (v !== t.value) t.value = v; it[f] = v === '' ? 0 : +v; }
   save();
-  const box = t.closest('.pg-fz'); box.querySelector('.pg-sub').textContent = pgSoma(it) + ' animais'; box.querySelector('.pg-w').innerHTML = pgPwHtml(pr, it);
+  const box = t.closest('.pg-fz'); box.querySelector('.pg-sub').textContent = pgSoma(it) + ' animais'; box.querySelector('.pg-w').innerHTML = pgPwHtml(pr, it); { const st = document.getElementById('pg-st'); if (st) st.innerHTML = pgStHtml(pr); }
   document.getElementById('pg-tot').innerHTML = pgTotHtml(pr);
 });
 
