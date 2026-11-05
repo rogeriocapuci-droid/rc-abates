@@ -1259,7 +1259,7 @@ input[type="date"] { flex: 1 1 0; }
   function lotsFromCats(g, cats, faz) {
     var out = [];
     CATN.forEach(function (k) {
-      var x = cats[k]; if (!x || !x.grupos || !x.grupos.length) return;
+      var x = cats[k]; if (!x || !(x.q > 0) || !x.grupos || !x.grupos.length) return;
       var gs = x.grupos.slice().sort(function (a, b) { return b.q - a.q; });
       for (var i = 0; i < gs.length; i += MAXP + 1) {
         var ch = gs.slice(i, i + MAXP + 1), l = newLot(k);
