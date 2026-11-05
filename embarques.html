@@ -778,6 +778,7 @@ function calc(l, fazId) {
 }
 //#LOGIC-END
 
+const APP_VERSAO = 'v20';
 const nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const nf2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -897,7 +898,7 @@ function renderHome() {
     ${prox.length ? prox.map(bloco).join('') : '<p class="muted">Nenhum embarque programado. Toque em “+ Novo embarque”.</p>'}
     ${ant.length ? '<div class="sec" style="margin-top:26px">Já embarcados</div>' + ant.map(bloco).join('') : ''}
     <div class="card" id="bkpcard" style="margin-top:16px"><h3>Backup</h3>
-      <p class="muted small" style="margin:0 0 10px">Os romaneios e programações ficam salvos neste aparelho. Salve um backup de vez em quando.</p>
+      <p class="muted small" style="margin:0 0 10px">App versão <b>${APP_VERSAO}</b>. Os romaneios e programações ficam salvos neste aparelho. Salve um backup de vez em quando.</p>
       <div class="row"><button class="btn alt sm" data-act="backup">Salvar backup</button>
       <label class="btn alt sm" style="display:inline-flex;align-items:center" for="restore">Restaurar backup</label>
       <input type="file" id="restore" accept=".json,application/json" hidden></div></div>`;
@@ -1526,12 +1527,20 @@ function pgLinhas(pr, it) {
   else { if (+it.V) L.push({ n: 'Vacas', plan: +it.V, got: w.V }); if (+it.N) L.push({ n: 'Novilhas', plan: +it.N, got: w.N }); }
   return { w, L };
 }
+const PGCATS = { 'Bois': ['B', 'C', 'M'], 'Fêmeas': ['V', 'L', 'N'], 'Vacas': ['V', 'L'], 'Novilhas': ['N'] };
+function pgLotes(pr) { const lig = DB.lotes.filter(l => l.progId === pr.id); return lig.length ? lig : DB.lotes.filter(l => !l.progId && l.data === pr.data && (!pr.pecuarista || !l.pecuarista || norm(pr.pecuarista) === norm(l.pecuarista))); }
+function pgOnde(pr, it, nome) {
+  const alvo = norm(it.faz), cats = PGCATS[nome] || [], out = [];
+  pgLotes(pr).forEach(l => l.fazendas.forEach(z => { if (norm(z.nome) === alvo) return; let q = 0; l.folhas.forEach(f => f.cells.forEach(c => { if (!c.skip && cats.includes(c.cat) && (c.fz || f.faz) === z.id) q += c.n; })); if (q) out.push({ l: l.id, z: z.id, nome: z.nome || 'Sem nome', q }); }));
+  return out;
+}
 function pgPwHtml(pr, it) {
   if (!pgSoma(it)) return '';
   const { w, L } = pgLinhas(pr, it);
   if (!w.achou) return '<div class="pg-pw muted">Sem pesagem lançada para esta fazenda neste dia.</div>';
   return '<div class="pg-pw">' + L.map(x => { const f = x.plan - x.got; const c = f === 0 ? 'ok' : f > 0 ? 'falta' : 'exc';
-    return `<span class="${c}">${x.n}: ${x.got}/${x.plan}${x.det || ''}${f > 0 ? ' · faltam ' + f : f < 0 ? ' · +' + (-f) + ' a mais' : ' ✓'}</span>`; }).join('') + '</div>';
+    const on = f > 0 ? pgOnde(pr, it, x.n) : [];
+    return `<span class="${c}">${x.n}: ${x.got}/${x.plan}${x.det || ''}${f > 0 ? ' · faltam ' + f : f < 0 ? ' · +' + (-f) + ' a mais' : ' ✓'}</span>` + on.map(o => `<span class="muted small">↪ ${o.q} ${x.n.toLowerCase()} lançados em ${esc(o.nome)}</span><button class="btn alt sm" data-act="pgmover" data-it="${it.id}" data-ln="${x.n}" data-l="${o.l}" data-z="${o.z}">Mover ${Math.min(o.q, f)} para ${esc(it.faz)}</button>`).join(''); }).join('') + '</div>';
 }
 function pgStHtml(pr) { const q = pgStatus(pr);
   if (q.st === 'fechado') return `<div class="notice" style="border-color:var(--green);color:var(--green);font-weight:700">✓ Gado pesado e fechado: ${q.plan} de ${q.plan} animais</div>`;
@@ -1628,6 +1637,16 @@ document.addEventListener('input', ev => {
 
 /* ---------- Eventos ---------- */
 let armed = null;
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-act=pgmover]'); if (!t) return;
+  const pr = getProg(); if (!pr) return; const it = pr.itens.find(x => x.id === t.dataset.it); if (!it) return;
+  const l = DB.lotes.find(x => x.id === t.dataset.l); if (!l) return;
+  const alvo = l.fazendas.find(z => norm(z.nome) === norm(it.faz)); if (!alvo) { toast('Esta fazenda não existe no romaneio'); return; }
+  const linha = pgLinhas(pr, it).L.find(x => x.n === t.dataset.ln); let falta = linha ? linha.plan - linha.got : 0, mov = 0;
+  const cats = PGCATS[t.dataset.ln] || [];
+  l.folhas.forEach(f => f.cells.forEach(c => { if (mov >= falta || c.skip || !cats.includes(c.cat) || (c.fz || f.faz) !== t.dataset.z) return; c.fz = alvo.id; mov += c.n; }));
+  l.progId = l.progId || pr.id; save(); renderProgEdit(); toast(mov + ' animais movidos para ' + it.faz);
+});
 document.addEventListener('click', ev => {
   const t = ev.target.closest('[data-act]'); if (!t) return;
   if (t.dataset.act === 'toabate' || t.dataset.act === 'abrirabate') {
