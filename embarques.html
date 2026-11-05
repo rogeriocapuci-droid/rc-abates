@@ -243,12 +243,12 @@ button.cell { cursor: pointer; }
 .catb b { font-size: 17.5px; }
 .catb span { font-size: 9.5px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .catb[aria-pressed="true"] { opacity: 1; border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
-.dk-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, 48.5px); gap: 6px; }
-.key { border: 0; border-radius: 10px; background: var(--surface-2); font-size: 24px; font-weight: 700; }
+.dk-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, 66px); gap: 8px; }
+.key { border: 0; border-radius: 12px; background: var(--surface-2); font-size: 32px; font-weight: 700; }
 .key:active { background: var(--line); }
-.key.ok { grid-column: 4; grid-row: 2 / span 3; background: var(--green); color: var(--green-ink); font-size: 20px; line-height: 1.15; }
+.key.ok { grid-column: 4; grid-row: 2 / span 3; background: var(--green); color: var(--green-ink); font-size: 24px; line-height: 1.15; }
 .key.zero { grid-column: 1 / span 3; }
-.key.bk { font-size: 20px; }
+.key.bk { font-size: 26px; }
 
 /* Fechamento */
 .hero { background: var(--green); color: #fff; border-radius: 14px; padding: 16px; margin: 10px 0; }
@@ -1077,7 +1077,7 @@ function abateCard(l) {
 const abEnv = {};
 function renderFech() {
   const l = cur(); const c = calc(l, null);
-  let h = abateCard(l) + `<div class="row" style="margin-top:6px"><button class="btn gold" data-act="pdf" style="flex:1">Gerar PDF</button><button class="btn alt" data-act="copy" style="flex:1">Copiar resumo</button></div>`;
+  let h = abateCard(l) + `<div class="row" style="margin-top:6px"><button class="btn gold" data-act="pdf" style="flex:1 1 100%">PDF de fechamento (com valores)</button><button class="btn alt" data-act="pdfpeso" style="flex:1 1 100%">PDF só de peso (sem valores)</button><button class="btn alt" data-act="copy" style="flex:1">Copiar resumo</button></div>`;
   h += descCard(l);
   h += missing(l, c);
   if (!c.cab) h += `<div class="notice">Nenhum peso lançado ainda. Use a aba Pesagem.</div>`;
@@ -1188,12 +1188,13 @@ async function salvarArquivo(nome, data, mime) {
 }
 function hexRgb(h) { return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); }
 
-function buildPdf(l) {
+function buildPdf(l, modo) {
   let r0 = null;
-  for (let lvl = 0; lvl < 3; lvl++) { const r = buildPdfN(l, lvl); if (lvl === 0) r0 = r; if (r.pages <= r.expected) return r.buf; }
+  for (let lvl = 0; lvl < 3; lvl++) { const r = buildPdfN(l, lvl, modo); if (lvl === 0) r0 = r; if (r.pages <= r.expected) return r.buf; }
   return r0.buf;
 }
-function buildPdfN(l, lvl) {
+function buildPdfN(l, lvl, modo) {
+  const SO = modo === 'peso';
   const RH = [5, 4.4, 3.9][lvl], FS = [1, .88, .78][lvl];
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -1206,7 +1207,7 @@ function buildPdfN(l, lvl) {
   function header(y, sub) {
     doc.addImage(LOGO, 'PNG', M, y, 19, 22.4);
     doc.setTextColor(...GREEN); doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
-    doc.text('ROMANEIO DE PESO', M + 24, y + 9);
+    doc.text(SO ? 'ROMANEIO DE PESO' : 'ROMANEIO DE FECHAMENTO', M + 24, y + 9);
     doc.setFontSize(8.5); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal');
     doc.text('RC Embarques · Rogério Capuci · Compra de boi gordo · 67 99978-0302', M + 24, y + 14.5);
     if (sub) { doc.setFontSize(10); doc.setTextColor(...INK); doc.setFont('helvetica', 'bold'); doc.text(sub, M + 24, y + 20); }
@@ -1237,7 +1238,7 @@ function buildPdfN(l, lvl) {
     used.forEach(k => {
       doc.setFillColor(...hexRgb(CAT_HEX[k])); doc.rect(px, y - 0.6, 3, 3, 'F');
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
-      const t = l.cats[k].sigla + ' ' + nf2.format(effRend(l, f, k, g || f.faz)) + '%';
+      const t = l.cats[k].sigla + (SO ? ' ' + l.cats[k].nome : ' ' + nf2.format(effRend(l, f, k, g || f.faz)) + '%');
       doc.text(t, px + 4, y + 2); px += 6 + doc.getTextWidth(t) + 4;
     });
     y += 6;
@@ -1269,7 +1270,34 @@ function buildPdfN(l, lvl) {
     doc.text('Total da folha: ' + nf0.format(tot) + ' kg · ' + nf0.format(cab) + ' cab', W - M, ys + rh + 5, { align: 'right' });
     return ys + rh + 9 * FS;
   }
+  function pesoPdf(c, y, titulo) {
+    if (y + 40 * FS > PH) { doc.addPage(); y = M + 4; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...GREEN); doc.text(titulo, M, y + 4); y += 8;
+    const cols = [['Categoria', M, 'l'], ['Cabeças', 110, 'r'], ['Peso vivo (kg)', 156, 'r'], ['Média (kg)', W - M, 'r']];
+    doc.setFontSize(8.5); doc.setTextColor(...MUTE);
+    cols.forEach(cl => doc.text(cl[0], cl[1], y, { align: cl[2] === 'r' ? 'right' : 'left' }));
+    doc.setDrawColor(...GREEN); doc.setLineWidth(0.3); doc.line(M, y + 1.5, W - M, y + 1.5); y += 6 * FS;
+    doc.setFontSize(10.5); doc.setTextColor(...INK);
+    CATS.filter(k => c.per[k].cab > 0).forEach(k => {
+      const p = c.per[k];
+      doc.setFillColor(...hexRgb(CAT_HEX[k])); doc.rect(M, y - 3, 2.4, 3.6, 'F');
+      doc.setFont('helvetica', 'bold'); doc.text(l.cats[k].nome, M + 4, y); doc.setFont('helvetica', 'normal');
+      doc.text(nf0.format(p.cab), 110, y, { align: 'right' }); doc.text(nf0.format(p.peso), 156, y, { align: 'right' }); doc.text(nf1.format(p.peso / p.cab), W - M, y, { align: 'right' });
+      y += 6.5 * FS;
+    });
+    doc.line(M, y - 3.5, W - M, y - 3.5); doc.setFont('helvetica', 'bold');
+    doc.text('Total', M, y + 1); doc.text(nf0.format(c.cab), 110, y + 1, { align: 'right' }); doc.text(nf0.format(c.peso), 156, y + 1, { align: 'right' }); doc.text(c.cab ? nf1.format(c.peso / c.cab) : '-', W - M, y + 1, { align: 'right' });
+    y += 9 * FS;
+    if (c.flagged.length) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...MUTE);
+      const t = 'Em observação (' + c.flagged.length + '): ' + c.flagged.map(x => { const p = cellPos(x.pos); return x.w + ' kg (f' + x.folha + ' c' + p.col + ' l' + p.row + ')'; }).join(', ');
+      const ln = doc.splitTextToSize(t, W - 2 * M);
+      doc.text(ln, M, y + 1); doc.setTextColor(...INK); y += (ln.length - 1) * 3.6;
+    }
+    return y + 8 * FS;
+  }
   function fechPdf(c, y, titulo) {
+    if (SO) return pesoPdf(c, y, titulo.replace(/^Fechamento/, 'Resumo de pesos'));
     if (y + 70 * FS > PH) { doc.addPage(); y = M + 4; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...GREEN); doc.text(titulo, M, y + 4); y += 8;
     const cols = [['Categoria', M, 'l'], ['Cab', 62, 'r'], ['Peso vivo', 86, 'r'], ['Rend.', 104, 'r'], ['Carcaça kg', 128, 'r'], ['@', 146, 'r'], ['R$/@', 164, 'r'], ['Valor', W - M, 'r']];
@@ -1311,6 +1339,17 @@ function buildPdfN(l, lvl) {
   function fazTabPdf(y) {
     const rows = l.fazendas.map((z, i) => ({ z, i, x: calc(l, z.id) })).filter(r => r.x.cab > 0);
     if (!rows.length) return y;
+    if (SO) {
+      if (y + 14 + rows.length * 6 + 6 > PH) { doc.addPage(); y = M + 4; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...GREEN); doc.text('Por fazenda', M, y + 3); y += 8;
+      doc.setFontSize(8.5); doc.setTextColor(...MUTE);
+      [['Fazenda', M, 'l'], ['Cabeças', 110, 'r'], ['Peso vivo (kg)', 156, 'r'], ['Média (kg)', W - M, 'r']].forEach(cl => doc.text(cl[0], cl[1], y, { align: cl[2] === 'r' ? 'right' : 'left' }));
+      doc.setDrawColor(...GREEN); doc.setLineWidth(0.3); doc.line(M, y + 1.5, W - M, y + 1.5); y += 6;
+      doc.setFontSize(10); doc.setTextColor(...INK);
+      rows.forEach(r => { doc.setFont('helvetica', 'bold'); doc.text('F' + (r.i + 1) + '  ' + (r.z.nome || 'Sem nome'), M, y, { maxWidth: 85 }); doc.setFont('helvetica', 'normal');
+        doc.text(nf0.format(r.x.cab), 110, y, { align: 'right' }); doc.text(nf0.format(r.x.peso), 156, y, { align: 'right' }); doc.text(nf1.format(r.x.peso / r.x.cab), W - M, y, { align: 'right' }); y += 6 * FS; });
+      return y;
+    }
     if (y + 14 + rows.length * 6 + 6 > PH) { doc.addPage(); y = M + 4; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...GREEN); doc.text('Por fazenda', M, y + 3); y += 8;
     const cols = [['Fazenda', M, 'l'], ['Cab', 98, 'r'], ['Peso vivo', 122, 'r'], ['@', 142, 'r'], ['Bruto', 170, 'r'], ['Líquido', W - M, 'r']];
@@ -1358,14 +1397,14 @@ function buildPdfN(l, lvl) {
   for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal'); doc.text('RC Embarques · página ' + i + ' de ' + n, W / 2, 292, { align: 'center' }); }
   return { buf: doc.output('arraybuffer'), pages: n, expected: groups.length + ((l.separar && multi) ? 1 : 0) };
 }
-async function gerarPdf() {
+async function gerarPdf(modo) {
   const l = cur();
   if (!window.jspdf) { toast('O gerador de PDF não carregou.'); return; }
   const c = calc(l, null);
   if (!c.cab) { toast('Lance ao menos um peso'); return; }
   try {
-    const buf = buildPdf(l);
-    const nome = 'romaneio-' + (l.pecuarista || 'lote').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + (l.data || '') + '.pdf';
+    const buf = buildPdf(l, modo);
+    const nome = (modo === 'peso' ? 'romaneio-peso-' : 'romaneio-fechamento-') + (l.pecuarista || 'lote').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + (l.data || '') + '.pdf';
     const ok = await salvarArquivo(nome, buf, 'application/pdf');
     if (ok) toast('PDF pronto');
   } catch (e) { toast('Erro ao gerar o PDF'); console.error(e); }
@@ -1555,7 +1594,8 @@ document.addEventListener('click', ev => {
     case 'delfaz': { const id = t.dataset.id; const rest = l.fazendas.filter(z => z.id !== id); l.folhas.forEach(f => { if (f.faz === id) f.faz = rest[0].id; f.cells.forEach(c => { if (c.fz === id) c.fz = rest[0].id; }); if (f.colFaz) f.colFaz = f.colFaz.map(z => z === id ? rest[0].id : z); }); Object.keys(l.fazCat || {}).forEach(k => { if (l.fazCat[k] === id) delete l.fazCat[k]; }); if (K.faz === id) K.faz = null; l.fazendas = rest; if (rest.length < 2) l.separar = false; save(); renderDados(); break; }
     case 'separar': l.separar = t.dataset.v === '1'; save(); renderDados(); break;
     case 'modo': l.modo = +t.dataset.n; K.n = l.modo; save(); renderDados(); break;
-    case 'pdf': gerarPdf(); break;
+    case 'pdf': gerarPdf('valores'); break;
+    case 'pdfpeso': gerarPdf('peso'); break;
     case 'copy': copiar(); break;
     case 'fechar': $('#overlay').innerHTML = ''; break;
     case 'backup': backup(); break;
