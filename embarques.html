@@ -247,7 +247,10 @@ button.cell { cursor: pointer; }
 .catb { border: 2px solid transparent; border-radius: 9px; min-height: 48px; background: var(--cc); color: var(--on-cat); display: grid; align-content: center; justify-items: center; padding: 2px; line-height: 1.05; opacity: .72; }
 .catb b { font-size: 17.5px; }
 .catb span { font-size: 9.5px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.catb[aria-pressed="true"] { opacity: 1; border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.catb:not([aria-pressed="true"]) { opacity: .45; filter: saturate(.55); }
+.catb[aria-pressed="true"] { opacity: 1; border: 3px solid var(--ink); transform: translateY(-3px) scale(1.07); box-shadow: 0 5px 12px rgba(0,0,0,.35); position: relative; z-index: 1; }
+.dock .who { display: inline-block; background: var(--cc); color: var(--on-cat); font-weight: 800; border-radius: 7px; padding: 2px 9px; margin-right: 4px; }
+.dock { border-top: 4px solid var(--cc, var(--green)); }
 .dk-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, 66px); gap: 8px; }
 .key { border: 0; border-radius: 12px; background: var(--surface-2); font-size: 32px; font-weight: 700; }
 .key:active { background: var(--line); }
@@ -822,6 +825,24 @@ let view = 'home', tab = 'pes', curId = null;
 const K = { buf: '', cat: 'B', flag: false, n: 1, sel: null, folha: null, faz: null };
 const cur = () => DB.lotes.find(l => l.id === curId);
 const fzIdx = (l, id) => Math.max(0, l.fazendas.findIndex(z => z.id === id));
+/* cada categoria (e fazenda) pesa na sua própria tabela */
+function folhaPara(l, cat, faz) {
+  const col = l.fazModo === 'col';
+  const nonSkip = f => f.cells.filter(c => !c.skip);
+  const serve = f => { const cs = nonSkip(f); return cs.length && f.cells.length < 80 && cs.every(c => c.cat === cat && (col || (c.fz || f.faz) === faz)); };
+  let f = null;
+  for (let i = l.folhas.length - 1; i >= 0; i--) if (serve(l.folhas[i])) { f = l.folhas[i]; break; }
+  if (!f) f = l.folhas.find(x => !x.cells.length);
+  if (!f) { const last = l.folhas[l.folhas.length - 1]; f = { id: uid(), faz: faz, colFaz: ((last && last.colFaz) || []).slice(), rend: {}, cells: [] }; l.folhas.push(f); }
+  if (!f.cells.length && !col) f.faz = faz;
+  /* limpa tabelas vazias que sobraram */
+  if (l.folhas.length > 1) l.folhas = l.folhas.filter(x => x === f || x.cells.length);
+  return f;
+}
+function irParaTabela(l) {
+  const f = folhaPara(l, K.cat, fazAtual(l)); K.folha = f.id; K.buf = ''; save(); renderFolhas(); renderDock();
+  const el = document.querySelector('[data-folhabox="' + f.id + '"]'); if (el) el.scrollIntoView({ block: 'start' });
+}
 function fazAtual(l) { return (K.faz && l.fazendas.some(z => z.id === K.faz)) ? K.faz : l.fazendas[0].id; }
 const getFolha = (l, id) => l.folhas.find(f => f.id === id);
 const fazNome = (l, id) => { const f = l.fazendas.find(x => x.id === id); return (f && f.nome) || 'Sem nome'; };
@@ -971,7 +992,7 @@ function renderDock() {
     where = `Folha <b>${l.folhas.indexOf(f) + 1}</b> · coluna <b>${p.col}</b> · linha <b>${p.row}</b>`;
   }
   d.innerHTML = `<div class="dock c-${K.cat}"><div class="dock-in">
-    <div class="dk-top"><span class="where">${where}</span>
+    <div class="dk-top"><span class="where"><span class="who">${esc(l.cats[K.cat].nome)}${l.fazendas.length > 1 ? ' · ' + esc(fazNome(l, fazAtual(l))) : ''}</span> ${where}</span>
       ${K.sel ? '<span class="row" style="gap:6px;flex-wrap:nowrap"><button class="flagbtn" data-act="cancelsel">Cancelar</button><button class="flagbtn" data-act="delcell" style="color:var(--danger)">Apagar peso</button></span>' : '<button class="flagbtn" data-act="proxcol">Próx. coluna ⇥</button>'}</div>
     <div class="dk-disp">
       <div class="dk-val">${K.buf ? esc(K.buf) : '<span class="ph">0</span>'}<small>kg</small></div>
@@ -1623,8 +1644,8 @@ document.addEventListener('click', ev => {
     case 'tab': tab = t.dataset.tab; K.sel = null; renderEditor(); window.scrollTo(0, 0); if (tab === 'pes') seguir(); break;
     case 'dig': if (K.buf.length < 5) K.buf += t.dataset.d; K.buf = K.buf.replace(/^0+/, ''); renderDock(); break;
     case 'bk': K.buf = K.buf.slice(0, -1); renderDock(); break;
-    case 'cat': K.cat = t.dataset.cat; if (!K.sel && l.fazModo !== 'col') { const fc = l.fazCat && l.fazCat[K.cat]; if (fc && l.fazendas.some(z => z.id === fc)) K.faz = fc; } renderDock(); renderFolhas(); seguir(); break;
-    case 'faz': K.faz = t.dataset.id; if (!K.sel && l.fazModo !== 'col') { l.fazCat = l.fazCat || {}; l.fazCat[K.cat] = K.faz; save(); } renderDock(); break;
+    case 'cat': K.cat = t.dataset.cat; if (!K.sel && l.fazModo !== 'col') { const fc = l.fazCat && l.fazCat[K.cat]; if (fc && l.fazendas.some(z => z.id === fc)) K.faz = fc; } if (!K.sel) { irParaTabela(l); } else { renderDock(); renderFolhas(); seguir(); } break;
+    case 'faz': K.faz = t.dataset.id; if (!K.sel && l.fazModo !== 'col') { l.fazCat = l.fazCat || {}; l.fazCat[K.cat] = K.faz; save(); } if (!K.sel) irParaTabela(l); else renderDock(); break;
     case 'flag': K.flag = !K.flag; renderDock(); break;
     case 'setn': K.n = +t.dataset.n; if (!K.sel) { l.modo = K.n; save(); } renderDock(); break;
     case 'lancar': lancar(); break;
