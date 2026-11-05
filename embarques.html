@@ -786,7 +786,7 @@ function calc(l, fazId) {
 }
 //#LOGIC-END
 
-const APP_VERSAO = 'v23';
+const APP_VERSAO = 'v24';
 const nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const nf2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1338,6 +1338,79 @@ function buildPdfN(l, lvl, modo) {
     doc.text('Total da folha: ' + nf0.format(tot) + ' kg · ' + nf0.format(cab) + ' cab', W - M, ys + rh + 5, { align: 'right' });
     return ys + rh + 9 * FS;
   }
+  let lpages = 0;
+  function pesosPdf(g) {
+    const LW = 297, LH = 210, NC = 10, labW = 7, rh = 6.6;
+    const colW = (LW - 2 * M - labW) / NC;
+    const cols = [];
+    l.folhas.forEach(f => {
+      const cells = f.cells.filter(c => !g || ((c.fz || f.faz) === g && !c.skip));
+      for (let c = 0; c < 4; c++) {
+        const cs = cells.slice(c * 20, c * 20 + 20);
+        const first = cs.find(x => x && !x.skip);
+        if (!first) continue;
+        const ids = new Set(cs.filter(x => !x.skip).map(x => x.fz || f.faz));
+        cols.push({ f, cs, faz: fazNome(l, first.fz || f.faz) + (ids.size > 1 ? ' +' : '') });
+      }
+    });
+    if (!cols.length) return;
+    const nPg = Math.ceil(cols.length / NC);
+    let acum = 0, acumCab = 0;
+    for (let pg = 0; pg < nPg; pg++) {
+      doc.addPage('a4', 'landscape'); lpages++;
+      const part = cols.slice(pg * NC, pg * NC + NC);
+      let y = M;
+      doc.setTextColor(...GREEN); doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+      doc.text('ROMANEIO DE PESO' + (g ? ' · ' + fazNome(l, g) : ''), M, y + 5);
+      doc.setFontSize(8.5); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal');
+      doc.text('Página ' + (pg + 1) + ' de ' + nPg, LW - M, y + 5, { align: 'right' });
+      doc.setTextColor(...INK); doc.setFontSize(9);
+      doc.text('Data: ' + fmtDate(l.data) + '   ·   Pecuarista: ' + (l.pecuarista || '') + '   ·   Comprador: ' + (l.comprador || ''), M, y + 11);
+      y += 15;
+      const hh = 9;
+      doc.setDrawColor(150, 160, 152); doc.setLineWidth(0.2);
+      part.forEach((co, i) => {
+        const x = M + labW + i * colW;
+        doc.setFillColor(232, 240, 234); doc.rect(x, y, colW, hh, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...GREEN);
+        const ln = doc.splitTextToSize(co.faz, colW - 2).slice(0, 2);
+        doc.text(ln, x + colW / 2, y + (ln.length > 1 ? 3.6 : 5.6), { align: 'center' });
+      });
+      y += hh;
+      for (let r = 0; r < 20; r++) {
+        const yy = y + r * rh;
+        doc.setFontSize(7); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal'); doc.text(String(r + 1), M + 2, yy + rh * 0.7);
+        for (let i = 0; i < NC; i++) {
+          const x = M + labW + i * colW;
+          doc.rect(x, yy, colW, rh);
+          const co = part[i]; const cell = co && co.cs[r];
+          if (cell && !cell.skip) {
+            doc.setFillColor(...hexRgb(CAT_HEX[cell.cat])); doc.rect(x, yy, 1.8, rh, 'F');
+            doc.setTextColor(...INK); doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
+            doc.text(String(cell.w), x + colW - 1.5, yy + rh * 0.72, { align: 'right' });
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(6.3); doc.setTextColor(...MUTE);
+            const tag = (l.cats[cell.cat].nome || l.cats[cell.cat].sigla) + (cell.n > 1 ? ' x' + cell.n : '') + (cell.flag ? ' *' : '');
+            doc.text(tag, x + 3, yy + rh * 0.68, { maxWidth: colW - 13 });
+          }
+        }
+      }
+      const ys = y + 20 * rh;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...INK);
+      let tot = 0, cab = 0;
+      part.forEach((co, i) => {
+        const s = co.cs.reduce((a, x) => a + (x && !x.skip ? x.w : 0), 0); tot += s; cab += co.cs.reduce((a, x) => a + (x && !x.skip ? x.n : 0), 0);
+        const x = M + labW + i * colW;
+        doc.setFillColor(245, 247, 245); doc.rect(x, ys, colW, rh, 'FD');
+        if (s) doc.text(nf0.format(s), x + colW - 1.5, ys + rh * 0.72, { align: 'right' });
+      });
+      acum += tot; acumCab += cab;
+      doc.setFontSize(9);
+      doc.text('Total da página: ' + nf0.format(tot) + ' kg · ' + nf0.format(cab) + ' cab' + (nPg > 1 ? '   |   Acumulado: ' + nf0.format(acum) + ' kg · ' + nf0.format(acumCab) + ' cab' : ''), LW - M, ys + rh + 5, { align: 'right' });
+      const used = CATS.filter(k => part.some(co => co.cs.some(c => c && !c.skip && c.cat === k)));
+      let px = M; doc.setFontSize(7.5);
+      used.forEach(k => { doc.setFillColor(...hexRgb(CAT_HEX[k])); doc.rect(px, ys + rh + 2.6, 3, 3, 'F'); doc.setFont('helvetica', 'normal'); doc.text(l.cats[k].nome, px + 4, ys + rh + 5); px += 8 + doc.getTextWidth(l.cats[k].nome) + 3; });
+    }
+  }
   function pesoPdf(c, y, titulo) {
     if (y + 40 * FS > PH) { doc.addPage(); y = M + 4; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...GREEN); doc.text(titulo, M, y + 4); y += 8;
@@ -1444,17 +1517,14 @@ function buildPdfN(l, lvl, modo) {
     doc.text('COMPRADOR' + (l.comprador ? ' · ' + l.comprador : ''), M, y + 12.5); doc.text('VENDEDOR' + (l.pecuarista ? ' · ' + l.pecuarista : ''), W - M - 78, y + 12.5);
   }
   groups.forEach((g, gi) => {
-    if (gi > 0) doc.addPage();
-    let y = header(M, g ? 'Fazenda: ' + fazNome(l, g) : '');
-    l.folhas.forEach((f, fi) => {
-      if (!f.cells.some(c => !c.skip && (!g || (c.fz || f.faz) === g))) return;
-      if (y + 6 + 22 * RH + 14 > PH) { doc.addPage(); y = M + 4; }
-      y = folhaPdf(f, fi, y, g);
-    });
+    let y;
+    pesosPdf(g);
+    doc.addPage(); y = header(M, g ? 'Fazenda: ' + fazNome(l, g) : '');
     y = fechPdf(calc(l, g), y, g ? 'Fechamento · ' + fazNome(l, g) : 'Fechamento');
     if (!g && multi) y = fazTabPdf(y);
     assinaturas(y);
   });
+  if (doc.getNumberOfPages() > 1) doc.deletePage(1);
   if (l.separar && multi) {
     doc.addPage(); let y = header(M, 'Fechamento geral');
     y = fechPdf(calc(l, null), y, 'Fechamento · todas as fazendas');
@@ -1462,8 +1532,8 @@ function buildPdfN(l, lvl, modo) {
     assinaturas(y);
   }
   const n = doc.getNumberOfPages();
-  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal'); doc.text('RC Embarques · página ' + i + ' de ' + n, W / 2, 292, { align: 'center' }); }
-  return { buf: doc.output('arraybuffer'), pages: n, expected: groups.length + ((l.separar && multi) ? 1 : 0) };
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal'); const pz = doc.internal.pageSize; doc.text('RC Embarques · página ' + i + ' de ' + n, pz.getWidth() / 2, pz.getHeight() - 5, { align: 'center' }); }
+  return { buf: doc.output('arraybuffer'), pages: n, expected: groups.length + ((l.separar && multi) ? 1 : 0) + lpages };
 }
 async function gerarPdf(modo) {
   const l = cur();
