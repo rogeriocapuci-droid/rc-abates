@@ -178,7 +178,20 @@ p { margin: 0 0 10px; line-height: 1.4; }
     var d = readE(); var n = { rom: 0, prog: 0, ja: 0 };
     if (d.lotes.every(function (l) { return l.exemplo; })) d.lotes = [];
     var ids = {}; d.lotes.forEach(function (l) { ids[l.id] = 1; });
-    (src.lotes || []).forEach(function (l) { if (!l || !l.id || l.exemplo) return; if (ids[l.id]) n.ja++; else { d.lotes.push(l); ids[l.id] = 1; n.rom++; } });
+    function nz(x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim().replace(/ iii$/, ' 3').replace(/ ii$/, ' 2'); }
+    function repor(l) {
+      var old = null, b = nz(l.pecuarista);
+      d.lotes.forEach(function (o) { if (o.exemplo) return; var a = nz(o.pecuarista); if (!(a === b || a.indexOf(b) === 0 || b.indexOf(a) === 0)) return; var dd = Math.abs(new Date(o.data) - new Date(l.data)) / 864e5; if (dd <= 2 && (!old || (o.criado || 0) > (old.criado || 0))) old = o; });
+      delete l.repor; if (!old) return false;
+      var map = {}; (l.fazendas || []).forEach(function (z) { (old.fazendas || []).forEach(function (oz) { if (nz(oz.nome) === nz(z.nome)) map[z.id] = oz.id; }); });
+      var mp = function (id) { return map[id] || id; };
+      l.fazendas.forEach(function (z) { z.id = mp(z.id); });
+      l.folhas.forEach(function (f) { f.faz = mp(f.faz); f.cells.forEach(function (c) { if (c.fz) c.fz = mp(c.fz); }); });
+      ['progId', 'frigorifico', 'comprador', 'obs', 'cats', 'funrural', 'senar', 'ajuste', 'pecuarista', 'data', 'criado', 'separar', 'modo'].forEach(function (k) { if (old[k] !== undefined) l[k] = old[k]; });
+      if (old.fazRend) { l.fazRend = {}; Object.keys(old.fazRend).forEach(function (k) { if (l.fazendas.some(function (z) { return z.id === k; })) l.fazRend[k] = old.fazRend[k]; }); }
+      l.id = old.id; d.lotes[d.lotes.indexOf(old)] = l; return true;
+    }
+    (src.lotes || []).forEach(function (l) { if (!l || !l.id || l.exemplo) return; if (l.repor && repor(l)) { n.rom++; return; } delete l.repor; if (ids[l.id]) n.ja++; else { d.lotes.push(l); ids[l.id] = 1; n.rom++; } });
     var pids = {}; d.progs.forEach(function (p) { pids[p.id] = 1; });
     (src.progs || []).forEach(function (p) { if (!p || !p.id) return; if (pids[p.id]) n.ja++; else { d.progs.push(p); pids[p.id] = 1; n.prog++; } });
     if (n.rom || n.prog) writeE(d); return n;
