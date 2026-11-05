@@ -166,7 +166,12 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
 .lote-side .lote-del { border-left: 0; flex: 1; }
 .lote-side .lote-del + .lote-del { border-top: 1px solid var(--line); }
 .lote-del.go { color: var(--green); font-weight: 700; }
-.tag.pg { background: var(--green); color: var(--green-ink); }
+.tag.pg { background: var(--danger); color: #fff; }
+.tag.pg.ok { background: var(--green); color: var(--green-ink); }
+.lote.st-open { border-color: var(--danger); border-width: 2px; }
+.lote.st-ok { border-color: var(--green); border-width: 2px; }
+.lote.st-open .lote-del.go { color: var(--danger); font-weight: 800; }
+.lote.st-ok .lote-del.go { color: var(--green); font-weight: 800; }
 /* Editor */
 .topbar { display: flex; align-items: center; gap: 10px; padding: 4px 0 8px; }
 .topbar .back { border: 0; background: none; font-weight: 700; color: var(--green); font-size: 16px; padding: 8px 4px; min-height: 44px; }
@@ -844,12 +849,12 @@ function renderHome() {
   DB.lotes.forEach(l => { if (l.progId && DB.progs.some(p => p.id === l.progId)) return; (dias[l.data || ''] = dias[l.data || ''] || { progs: [], lotes: [] }).lotes.push(l); });
   const keys = Object.keys(dias);
   const prox = keys.filter(k => k >= hoje).sort(), ant = keys.filter(k => k < hoje).sort().reverse();
-  const stLinha = p => { const q = pgStatus(p); return q.st === 'fechado' ? `<div class="l3" style="color:var(--green);font-weight:700">✓ Gado pesado · ${q.plan} de ${q.plan}</div>` : q.st === 'excedeu' ? `<div class="l3" style="color:var(--danger);font-weight:700">Pesado · ${q.exc} a mais que o programado</div>` : q.st === 'pesando' ? `<div class="l3" style="color:var(--warn);font-weight:700">Pesando · ${q.got} de ${q.plan} · faltam ${q.falta}</div>` : ''; };
-  const cardProg = p => { const t = pgTot(p); return `<div class="lote"${pgStatus(p).st === 'fechado' ? ' style="border-color:var(--green)"' : ''}><button class="lote-main" data-act="pgabrir" data-id="${p.id}">
-        <b>${esc(p.pecuarista || 'Sem pecuarista')}<span class="tag pg">${pgStatus(p).st === 'fechado' ? 'pesado ✓' : 'programado'}</span></b>
+  const stLinha = p => { const q = pgStatus(p); return q.st === 'fechado' ? `<div class="l3" style="color:var(--green);font-weight:700">✓ Gado pesado · ${q.plan} de ${q.plan}</div>` : q.st === 'excedeu' ? `<div class="l3" style="color:var(--danger);font-weight:700">Pesado · ${q.exc} a mais que o programado</div>` : q.st === 'pesando' ? `<div class="l3" style="color:var(--danger);font-weight:700">Pesando · ${q.got} de ${q.plan} · faltam ${q.falta}</div>` : q.plan ? `<div class="l3" style="color:var(--danger);font-weight:700">Aguardando pesagem · 0 de ${q.plan}</div>` : ''; };
+  const cardProg = p => { const t = pgTot(p); return `<div class="lote ${pgStatus(p).st === 'fechado' ? 'st-ok' : 'st-open'}"><button class="lote-main" data-act="pgabrir" data-id="${p.id}">
+        <b>${esc(p.pecuarista || 'Sem pecuarista')}<span class="tag pg ${pgStatus(p).st === 'fechado' ? 'ok' : ''}">${pgStatus(p).st === 'fechado' ? 'pesado ✓' : 'programado'}</span></b>
         <div class="l2">${esc(p.itens.map(i => i.faz || 'Sem nome').join(' + ') || 'Sem fazendas')}</div>
         <div class="l3">${t.all} animais${t.B ? ' · ' + t.B + ' bois' : ''}${(t.V + t.N + t.F) ? ' · ' + (t.V + t.N + t.F) + ' fêmeas' : ''}</div>
-        ${stLinha(p)}${(() => { const ls = lotesDe(p).map(l => calc(l, null)).filter(c => c.cab); if (!ls.length) return ''; const cab = ls.reduce((a, c) => a + c.cab, 0), kg = ls.reduce((a, c) => a + c.peso, 0), liq = ls.reduce((a, c) => a + c.liquido, 0); return `<div class="l3"><b>Romaneio:</b> ${nf0.format(cab)} cab · ${nf0.format(kg)} kg${liq ? ' · ' + brl(liq) : ''}</div>`; })()}</button>
+        ${stLinha(p)}${(() => { const ls = lotesDe(p).map(l => calc(l, null)).filter(c => c.cab); if (!ls.length) return ''; const cab = ls.reduce((a, c) => a + c.cab, 0), kg = ls.reduce((a, c) => a + c.peso, 0), liq = ls.reduce((a, c) => a + c.liquido, 0); return `<div class="l3"><span style="font-weight:700">Romaneio:</span> ${nf0.format(cab)} cab · ${nf0.format(kg)} kg${liq ? ' · ' + brl(liq) : ''}</div>`; })()}</button>
         <div class="lote-side"><button class="lote-del go" data-act="pgromaneio" data-id="${p.id}">${pgStatus(p).st === 'fechado' ? 'Ver' : 'Pesar'}</button>
         <button class="lote-del" data-act="pgdel" data-id="${p.id}">Excluir</button></div></div>`; };
   const cardLote = l => { const c = calc(l, null); return `<div class="lote"><button class="lote-main" data-act="abrir" data-id="${l.id}">
@@ -1506,8 +1511,8 @@ function pgPwHtml(pr, it) {
 function pgStHtml(pr) { const q = pgStatus(pr);
   if (q.st === 'fechado') return `<div class="notice" style="border-color:var(--green);color:var(--green);font-weight:700">✓ Gado pesado e fechado: ${q.plan} de ${q.plan} animais</div>`;
   if (q.st === 'excedeu') return `<div class="notice" style="font-weight:700">Pesagem fechou com ${q.exc} animais a mais que o programado</div>`;
-  if (q.st === 'pesando') return `<div class="notice" style="font-weight:700">Pesando: ${q.got} de ${q.plan} · faltam ${q.falta}</div>`;
-  return ''; }
+  if (q.st === 'pesando') return `<div class="notice" style="border-color:var(--danger);color:var(--danger);font-weight:700">Pesando: ${q.got} de ${q.plan} · faltam ${q.falta}</div>`;
+  return q.plan ? `<div class="notice" style="border-color:var(--danger);color:var(--danger);font-weight:700">Aguardando pesagem: 0 de ${q.plan}</div>` : ''; }
 /* situação geral da programação: nada | pesando | fechado | excedeu */
 function pgStatus(pr) {
   let any = false, falta = 0, exc = 0, plan = 0, got = 0;
