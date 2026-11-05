@@ -249,6 +249,8 @@ button.cell { cursor: pointer; }
 .catb span { font-size: 9.5px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .catb:not([aria-pressed="true"]) { opacity: .45; filter: saturate(.55); }
 .catb[aria-pressed="true"] { opacity: 1; border: 3px solid var(--ink); transform: translateY(-3px) scale(1.07); box-shadow: 0 5px 12px rgba(0,0,0,.35); position: relative; z-index: 1; }
+.fzfix { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+.fzfix .pct select { border: 0; border-radius: 6px; padding: 2px 4px; font: inherit; font-weight: 700; background: rgba(255,255,255,.92); color: #15231a; max-width: 140px; }
 .dock .who { display: inline-block; background: var(--cc); color: var(--on-cat); font-weight: 800; border-radius: 7px; padding: 2px 9px; margin-right: 4px; }
 .dock { border-top: 4px solid var(--cc, var(--green)); }
 .dk-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, 66px); gap: 8px; }
@@ -975,6 +977,7 @@ function folhaHtml(l, f, fi, multi) {
     <div class="fo-head"><h3>Folha ${fi + 1}</h3>
       ${active ? '<span class="tag" style="margin-left:auto">lançando aqui</span>' : `<button class="btn alt sm pick" data-act="usar" data-folha="${f.id}">Lançar nesta</button>`}
     </div>
+    ${multi && l.fazModo !== 'col' && f.cells.length ? `<div class="fzfix">${used.filter(k => f.cells.some(c => c.cat === k && !c.skip)).map(k => { const cur0 = [...new Set(f.cells.filter(c => c.cat === k && !c.skip).map(c => c.fz || f.faz))]; return `<label class="pct c-${k}">${esc(l.cats[k].sigla)} de<select data-fzcat="${f.id}:${k}" aria-label="Fazenda dos ${esc(l.cats[k].nome)} desta folha">${cur0.length > 1 ? '<option value="" selected>Misturadas</option>' : ''}${l.fazendas.map(z => `<option value="${z.id}"${cur0.length === 1 && cur0[0] === z.id ? ' selected' : ''}>${esc(z.nome || 'Sem nome')}</option>`).join('')}</select></label>`; }).join('')}</div>` : ''}
     <div class="pcts">${used.map(k => `<label class="pct c-${k}">${esc(l.cats[k].sigla)}<input inputmode="decimal" data-folhapct="${f.id}:${k}" value="${f.rend[k] === undefined ? '' : String(f.rend[k]).replace('.', ',')}" placeholder="${String(baseRend(l, f.faz, k)).replace('.', ',')}" aria-label="Rendimento ${esc(catLabel(l, k))}"><em>%</em></label>`).join('')}</div>
     <div class="grid">${hd}${cells}${sums}</div>
     <div class="fo-foot"><span><b>${nf0.format(cab)}</b> cab</span><span>Total da folha <b>${nf0.format(total)} kg</b></span></div>
@@ -1129,6 +1132,7 @@ function fazModoCard(l) {
     <p class="muted small" style="margin:8px 0 0">${m === 'cat' ? 'Cada categoria pertence a uma fazenda, como boi de uma e vaca de outra.' : 'Cada coluna da folha pertence a uma fazenda. Na aba Pesagem, toque no nome da fazenda sobre a coluna para trocar. Use Próx. coluna para pular para o começo da coluna seguinte.'}</p></div>`;
 }
 function fazCatCard(l) {
+  return ''; /* a fazenda de cada animal é escolhida na pesagem; este atalho misturava as fazendas */
   if (l.fazendas.length < 2 || l.fazModo === 'col') return '';
   const cnt = {}; l.folhas.forEach(f => f.cells.forEach(c => { cnt[c.cat] = (cnt[c.cat] || 0) + c.n; }));
   const com = CATS.filter(k => cnt[k]); const ks = com.length ? com : CATS;
@@ -1644,8 +1648,8 @@ document.addEventListener('click', ev => {
     case 'tab': tab = t.dataset.tab; K.sel = null; renderEditor(); window.scrollTo(0, 0); if (tab === 'pes') seguir(); break;
     case 'dig': if (K.buf.length < 5) K.buf += t.dataset.d; K.buf = K.buf.replace(/^0+/, ''); renderDock(); break;
     case 'bk': K.buf = K.buf.slice(0, -1); renderDock(); break;
-    case 'cat': K.cat = t.dataset.cat; if (!K.sel && l.fazModo !== 'col') { const fc = l.fazCat && l.fazCat[K.cat]; if (fc && l.fazendas.some(z => z.id === fc)) K.faz = fc; } if (!K.sel) { irParaTabela(l); } else { renderDock(); renderFolhas(); seguir(); } break;
-    case 'faz': K.faz = t.dataset.id; if (!K.sel && l.fazModo !== 'col') { l.fazCat = l.fazCat || {}; l.fazCat[K.cat] = K.faz; save(); } if (!K.sel) irParaTabela(l); else renderDock(); break;
+    case 'cat': K.cat = t.dataset.cat; if (!K.sel) { irParaTabela(l); } else { renderDock(); renderFolhas(); seguir(); } break;
+    case 'faz': K.faz = t.dataset.id; if (!K.sel) irParaTabela(l); else renderDock(); break;
     case 'flag': K.flag = !K.flag; renderDock(); break;
     case 'setn': K.n = +t.dataset.n; if (!K.sel) { l.modo = K.n; save(); } renderDock(); break;
     case 'lancar': lancar(); break;
@@ -1680,6 +1684,12 @@ document.addEventListener('input', ev => {
 });
 document.addEventListener('change', ev => {
   const t = ev.target, l = cur();
+  if (t.dataset && t.dataset.fzcat && l && t.value) {
+    const [fid, k] = t.dataset.fzcat.split(':'), f = getFolha(l, fid);
+    f.cells.forEach(c => { if (c.cat === k && !c.skip) c.fz = t.value; });
+    if (f.cells.every(c => c.skip || c.cat === k)) f.faz = t.value;
+    save(); renderFolhas(); renderDock(); renderMini(); toast('Fazenda corrigida nesta folha'); return;
+  }
   if (t.dataset && t.dataset.fazcat && l) {
     const k = t.dataset.fazcat; l.fazCat = l.fazCat || {};
     if (t.value) { l.fazCat[k] = t.value; l.folhas.forEach(f => f.cells.forEach(c => { if (c.cat === k) c.fz = t.value; })); }
