@@ -970,9 +970,9 @@ function renderDock() {
     ${l.fazendas.length > 1 && (l.fazModo !== 'col' || K.sel) ? `<div class="dk-faz" role="group" aria-label="Fazenda do animal">${l.fazendas.map((z, i) => `<button class="fazb z${(i % 6) + 1}" data-act="faz" data-id="${z.id}" aria-pressed="${fazAtual(l) === z.id}"><b>${i + 1}</b><span>${esc(z.nome || 'Sem nome')}</span></button>`).join('')}</div>` : ''}
     <div class="dk-cats">${CATS.map(k => `<button class="catb c-${k}" data-act="cat" data-cat="${k}" aria-pressed="${K.cat === k}"><b>${esc(l.cats[k].sigla)}</b><span>${esc(l.cats[k].nome)}</span></button>`).join('')}</div>
     <div class="dk-pad">
-      ${[1, 2, 3].map(n => `<button class="key" data-act="dig" data-d="${n}">${n}</button>`).join('')}<button class="key bk" data-act="bk" aria-label="Apagar dígito">⌫</button>
+      ${[7, 8, 9].map(n => `<button class="key" data-act="dig" data-d="${n}">${n}</button>`).join('')}<button class="key bk" data-act="bk" aria-label="Apagar dígito">⌫</button>
       ${[4, 5, 6].map(n => `<button class="key" data-act="dig" data-d="${n}">${n}</button>`).join('')}<button class="key ok" data-act="lancar">${K.sel ? 'Salvar' : 'Lançar'}<br>↵</button>
-      ${[7, 8, 9].map(n => `<button class="key" data-act="dig" data-d="${n}">${n}</button>`).join('')}
+      ${[1, 2, 3].map(n => `<button class="key" data-act="dig" data-d="${n}">${n}</button>`).join('')}
       <button class="key zero" data-act="dig" data-d="0">0</button>
     </div></div></div>`;
   requestAnimationFrame(() => { const el = d.firstElementChild; if (el) document.documentElement.style.setProperty('--dock-h', el.offsetHeight + 'px'); });
