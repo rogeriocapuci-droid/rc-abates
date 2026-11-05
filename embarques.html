@@ -786,7 +786,7 @@ function calc(l, fazId) {
 }
 //#LOGIC-END
 
-const APP_VERSAO = 'v22';
+const APP_VERSAO = 'v23';
 const nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const nf2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1062,17 +1062,18 @@ function lancar() {
 }
 
 /* ---------- Fechamento ---------- */
-function fechBlock(l, c, titulo) {
+function fechBlock(l, c, titulo, part) {
   const cats = CATS.filter(k => c.per[k].cab > 0);
-  return `${titulo ? `<h3 style="margin:14px 0 8px">${esc(titulo)}</h3>` : ''}
+  const hero = `${titulo ? `<h3 style="margin:14px 0 8px">${esc(titulo)}</h3>` : ''}
   <div class="hero"><small>Valor líquido</small><div class="big">${brl(c.liquido)}</div>
     <dl><dt>Valor bruto</dt><dd>${brl(c.bruto)}</dd>
       ${l.useFun === false ? '' : `<dt>Funrural (${nf2.format(l.funrural)}%)</dt><dd>− ${brl(c.fun)}</dd>`}
       ${l.useSen === false ? '' : `<dt>Senar (${nf2.format(l.senar)}%)</dt><dd>− ${brl(c.sen)}</dd>`}
       ${c.ajuste ? `<dt>Desconto no fechamento</dt><dd>− ${brl(c.ajuste)}</dd>` : ''}
       <div class="sep"></div>
-      <dt>${nf0.format(c.cab)} cabeças</dt><dd>${nf0.format(c.peso)} kg vivo</dd></dl></div>
-  ${cats.map(k => { const p = c.per[k], ct = l.cats[k]; return `<div class="card c-${k}">
+      <dt>${nf0.format(c.cab)} cabeças</dt><dd>${nf0.format(c.peso)} kg vivo</dd></dl></div>`;
+  if (part === 'hero') return hero;
+  return `${cats.map(k => { const p = c.per[k], ct = l.cats[k]; return `<div class="card c-${k}">
     <div class="cathead"><span class="chip">${esc(ct.sigla)}</span><b>${esc(ct.nome)}</b></div>
     <div class="kv">
       <div><span>Cabeças</span><b>${nf0.format(p.cab)}</b></div>
@@ -1091,17 +1092,30 @@ function missing(l, c) {
   const m = CATS.filter(k => c.per[k].cab > 0 && !(+l.cats[k].preco > 0)).map(k => l.cats[k].nome);
   return m.length ? `<div class="notice">Falta informar o preço (R$/@) de: ${esc(m.join(', '))}. Vá em Dados.</div>` : '';
 }
-function fazCards(l) {
-  if (l.fazendas.length < 2) return '';
+function fazHead(l, z, i, x) {
+  return `<div class="cathead"><span class="fzb2">${i + 1}</span><b>${esc(z.nome || 'Sem nome')}</b>${x.cab ? `<span class="muted small" style="margin-left:auto">${nf0.format(x.cab)} cab · ${nf0.format(x.peso)} kg</span>` : ''}</div>`;
+}
+/* parte de cima: só pesos, fazenda por fazenda (sem misturar categorias) */
+function fazPesos(l) {
   const zc = i => 'z' + ((i % 6) + 1);
-  return `<h3 style="margin:14px 0 8px">Por fazenda</h3>` + l.fazendas.map((z, i) => {
-    const x = calc(l, z.id);
-    const head = `<div class="cathead"><span class="fzb2">${i + 1}</span><b>${esc(z.nome || 'Sem nome')}</b>${x.cab ? `<span class="muted small" style="margin-left:auto">${nf0.format(x.cab)} cab · ${nf0.format(x.peso)} kg</span>` : ''}</div>`;
+  const multi = l.fazendas.length > 1;
+  return `<h3 style="margin:14px 0 8px">${multi ? 'Pesos por fazenda' : 'Pesos'}</h3>` + l.fazendas.map((z, i) => {
+    const x = calc(l, z.id), head = fazHead(l, z, i, x);
     if (!x.cab) return `<div class="card ${zc(i)}">${head}<p class="muted small" style="margin:0">Nenhum animal lançado para esta fazenda.</p></div>`;
+    const row = (k) => { const p = x.per[k]; return `<tr><td><span class="chip c-${k}">${esc(l.cats[k].sigla)}</span><small class="rd">${nf1.format(p.rend)}%</small></td><td>${nf0.format(p.cab)}</td><td>${nf0.format(p.peso)}</td><td>${nf1.format(p.peso / p.cab)}</td><td>${nf0.format(p.carc)}</td><td>${nf1.format(p.carc / p.cab)}</td><td><b>${nf2.format(p.carc / p.cab / 15)}</b></td></tr>`; };
     return `<div class="card ${zc(i)}">${head}
       <div class="scroll-x"><table class="tbl fzt"><tr><th>Cat.</th><th>Cab</th><th>Peso kg</th><th>Média kg</th><th>Peso desc.</th><th>Média desc.</th><th>@ da média</th></tr>
-      ${(() => { const ks = CATS.filter(k => x.per[k].cab > 0); const row = (lab, p) => `<td>${lab}</td><td>${nf0.format(p.cab)}</td><td>${nf0.format(p.peso)}</td><td>${nf1.format(p.peso / p.cab)}</td><td>${nf0.format(p.carc)}</td><td>${nf1.format(p.carc / p.cab)}</td><td><b>${nf2.format(p.carc / p.cab / 15)}</b></td>`; return ks.map(k => `<tr>${row(`<span class="chip c-${k}">${esc(l.cats[k].sigla)}</span><small class="rd">${nf1.format(x.per[k].rend)}%</small>`, x.per[k])}</tr>`).join('') + (ks.length > 1 ? `<tr class="tt">${row('Total', { cab: x.cab, peso: x.peso, carc: x.carc })}</tr>` : ''); })()}</table></div>
-      <div class="kv" style="margin-top:8px"><div><span>Bruto</span><b>${brl(x.bruto)}</b></div><div><span>Descontos</span><b>${brl(x.fun + x.sen)}</b></div><div><span>Líquido</span><b>${brl(x.liquido)}</b></div></div></div>`;
+      ${CATS.filter(k => x.per[k].cab > 0).map(row).join('')}</table></div></div>`;
+  }).join('');
+}
+/* parte de baixo: valor de cada fazenda */
+function fazValores(l) {
+  if (l.fazendas.length < 2) return '';
+  const zc = i => 'z' + ((i % 6) + 1);
+  return `<h3 style="margin:14px 0 8px">Valor por fazenda</h3>` + l.fazendas.map((z, i) => {
+    const x = calc(l, z.id); if (!x.cab) return '';
+    return `<div class="card ${zc(i)}">${fazHead(l, z, i, x)}
+      <div class="kv"><div><span>Bruto</span><b>${brl(x.bruto)}</b></div><div><span>Descontos</span><b>${brl(x.fun + x.sen)}</b></div><div><span>Líquido</span><b>${brl(x.liquido)}</b></div></div></div>`;
   }).join('') + `<p class="muted small" style="margin:0 0 10px">${l.separar ? 'No PDF sai um romaneio por fazenda, mais o fechamento geral.' : 'No PDF sai um romaneio único, com a fazenda de cada animal marcada pelo número.'}</p>`;
 }
 function descCard(l) {
@@ -1128,11 +1142,14 @@ function abateCard(l) {
 const abEnv = {};
 function renderFech() {
   const l = cur(); const c = calc(l, null);
-  let h = fazCards(l) + abateCard(l) + `<div class="row" style="margin-top:6px"><button class="btn gold" data-act="pdf" style="flex:1 1 100%">PDF de fechamento (com valores)</button><button class="btn alt" data-act="pdfpeso" style="flex:1 1 100%">PDF só de peso (sem valores)</button><button class="btn alt" data-act="copy" style="flex:1">Copiar resumo</button></div>`;
+  let h = fazPesos(l);
   h += descCard(l);
   h += missing(l, c);
   if (!c.cab) h += `<div class="notice">Nenhum peso lançado ainda. Use a aba Pesagem.</div>`;
-  h += fechBlock(l, c, '');
+  h += fazValores(l);
+  h += fechBlock(l, c, '', 'cats');
+  h += fechBlock(l, c, '', 'hero');
+  h += abateCard(l) + `<div class="row" style="margin-top:6px"><button class="btn gold" data-act="pdf" style="flex:1 1 100%">PDF de fechamento (com valores)</button><button class="btn alt" data-act="pdfpeso" style="flex:1 1 100%">PDF só de peso (sem valores)</button><button class="btn alt" data-act="copy" style="flex:1">Copiar resumo</button></div>`;;
   $('#pane').innerHTML = h;
 }
 
