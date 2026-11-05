@@ -836,7 +836,12 @@ function renderHome() {
   const hoje = hojeLocal();
   const dias = {};
   DB.progs.forEach(p => { (dias[p.data || ''] = dias[p.data || ''] || { progs: [], lotes: [] }).progs.push(p); });
-  DB.lotes.forEach(l => { (dias[l.data || ''] = dias[l.data || ''] || { progs: [], lotes: [] }).lotes.push(l); });
+  /* um embarque = um card: romaneio ligado à programação não aparece separado */
+  let mig = false;
+  DB.lotes.forEach(l => { if (l.progId) return; const p = DB.progs.find(x => x.data === l.data && x.pecuarista && l.pecuarista && norm(x.pecuarista) === norm(l.pecuarista) && !DB.lotes.some(o => o.progId === x.id)); if (p) { l.progId = p.id; mig = true; } });
+  if (mig) save();
+  const lotesDe = p => DB.lotes.filter(l => l.progId === p.id);
+  DB.lotes.forEach(l => { if (l.progId && DB.progs.some(p => p.id === l.progId)) return; (dias[l.data || ''] = dias[l.data || ''] || { progs: [], lotes: [] }).lotes.push(l); });
   const keys = Object.keys(dias);
   const prox = keys.filter(k => k >= hoje).sort(), ant = keys.filter(k => k < hoje).sort().reverse();
   const stLinha = p => { const q = pgStatus(p); return q.st === 'fechado' ? `<div class="l3" style="color:var(--green);font-weight:700">✓ Gado pesado · ${q.plan} de ${q.plan}</div>` : q.st === 'excedeu' ? `<div class="l3" style="color:var(--danger);font-weight:700">Pesado · ${q.exc} a mais que o programado</div>` : q.st === 'pesando' ? `<div class="l3" style="color:var(--warn);font-weight:700">Pesando · ${q.got} de ${q.plan} · faltam ${q.falta}</div>` : ''; };
@@ -844,7 +849,7 @@ function renderHome() {
         <b>${esc(p.pecuarista || 'Sem pecuarista')}<span class="tag pg">${pgStatus(p).st === 'fechado' ? 'pesado ✓' : 'programado'}</span></b>
         <div class="l2">${esc(p.itens.map(i => i.faz || 'Sem nome').join(' + ') || 'Sem fazendas')}</div>
         <div class="l3">${t.all} animais${t.B ? ' · ' + t.B + ' bois' : ''}${(t.V + t.N + t.F) ? ' · ' + (t.V + t.N + t.F) + ' fêmeas' : ''}</div>
-        ${stLinha(p)}</button>
+        ${stLinha(p)}${(() => { const ls = lotesDe(p).map(l => calc(l, null)).filter(c => c.cab); if (!ls.length) return ''; const cab = ls.reduce((a, c) => a + c.cab, 0), kg = ls.reduce((a, c) => a + c.peso, 0), liq = ls.reduce((a, c) => a + c.liquido, 0); return `<div class="l3"><b>Romaneio:</b> ${nf0.format(cab)} cab · ${nf0.format(kg)} kg${liq ? ' · ' + brl(liq) : ''}</div>`; })()}</button>
         <div class="lote-side"><button class="lote-del go" data-act="pgromaneio" data-id="${p.id}">${pgStatus(p).st === 'fechado' ? 'Ver' : 'Pesar'}</button>
         <button class="lote-del" data-act="pgdel" data-id="${p.id}">Excluir</button></div></div>`; };
   const cardLote = l => { const c = calc(l, null); return `<div class="lote"><button class="lote-main" data-act="abrir" data-id="${l.id}">
