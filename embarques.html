@@ -230,6 +230,9 @@ button.cell { cursor: pointer; }
   padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(10px + 0px) max(16px, env(safe-area-inset-left, 0px));
 }
 .dock-in { max-width: 680px; margin: 0 auto; display: grid; gap: 7px; }
+.dk-handle { width: 100%; min-height: 34px; border: 0; border-radius: 10px; background: var(--cc, var(--green)); color: var(--on-cat, #fff); font: 800 14px/1 inherit; font-family: inherit; letter-spacing: .3px; cursor: pointer; }
+.dock-min .dk-handle { min-height: 40px; }
+.dk-mini-val { font-size: 18px; color: var(--ink); white-space: nowrap; }
 .dk-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .dk-top .where { min-width: 0; overflow-wrap: anywhere; }
 .dk-top .where b { color: var(--ink); }
@@ -778,7 +781,7 @@ function calc(l, fazId) {
 }
 //#LOGIC-END
 
-const APP_VERSAO = 'v20';
+const APP_VERSAO = 'v21';
 const nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const nf2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -825,7 +828,7 @@ if (!DB.lotes || !DB.lotes.length) { DB = { lotes: [exemplo()], progs: DB.progs 
 if (!Array.isArray(DB.progs)) DB.progs = [];
 function save() { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) {} }
 let view = 'home', tab = 'pes', curId = null;
-const K = { buf: '', cat: 'B', flag: false, n: 1, sel: null, folha: null, faz: null };
+const K = { buf: '', cat: 'B', flag: false, n: 1, sel: null, folha: null, faz: null, min: (function(){ try { return localStorage.getItem('rc_dockmin') === '1'; } catch (e) { return false; } })() };
 const cur = () => DB.lotes.find(l => l.id === curId);
 const fzIdx = (l, id) => Math.max(0, l.fazendas.findIndex(z => z.id === id));
 /* cada categoria (e fazenda) pesa na sua própria tabela */
@@ -995,7 +998,13 @@ function renderDock() {
     let f = getFolha(l, K.folha); const idx = f.cells.length, p = cellPos(Math.min(idx, 79));
     where = `Folha <b>${l.folhas.indexOf(f) + 1}</b> · coluna <b>${p.col}</b> · linha <b>${p.row}</b>`;
   }
-  d.innerHTML = `<div class="dock c-${K.cat}"><div class="dock-in">
+  if (K.min) {
+    d.innerHTML = `<div class="dock c-${K.cat} dock-min"><div class="dock-in"><button class="dk-handle" data-act="dockmin" aria-label="Abrir teclado">▲ Abrir teclado</button>
+      <div class="dk-top"><span class="where"><span class="who">${esc(l.cats[K.cat].nome)}${l.fazendas.length > 1 ? ' · ' + esc(fazNome(l, fazAtual(l))) : ''}</span> ${where}</span><b class="dk-mini-val">${K.buf ? esc(K.buf) + ' kg' : ''}</b></div></div></div>`;
+    requestAnimationFrame(() => { const el = d.firstElementChild; if (el) document.documentElement.style.setProperty('--dock-h', el.offsetHeight + 'px'); });
+    return;
+  }
+  d.innerHTML = `<div class="dock c-${K.cat}"><div class="dock-in"><button class="dk-handle" data-act="dockmin" aria-label="Minimizar teclado">▼ Minimizar teclado</button>
     <div class="dk-top"><span class="where"><span class="who">${esc(l.cats[K.cat].nome)}${l.fazendas.length > 1 ? ' · ' + esc(fazNome(l, fazAtual(l))) : ''}</span> ${where}</span>
       ${K.sel ? '<span class="row" style="gap:6px;flex-wrap:nowrap"><button class="flagbtn" data-act="cancelsel">Cancelar</button><button class="flagbtn" data-act="delcell" style="color:var(--danger)">Apagar peso</button></span>' : '<button class="flagbtn" data-act="proxcol">Próx. coluna ⇥</button>'}</div>
     <div class="dk-disp">
@@ -1676,6 +1685,7 @@ document.addEventListener('click', ev => {
     case 'cancelsel': K.sel = null; K.buf = ''; K.n = l.modo; K.flag = false; renderFolhas(); renderDock(); break;
     case 'delcell': { const f = getFolha(l, K.sel.folha); f.cells.splice(K.sel.idx, 1); K.sel = null; K.buf = ''; K.n = l.modo; K.flag = false; save(); renderFolhas(); renderDock(); renderMini(); toast('Peso apagado'); break; }
     case 'colfaz': { const f = getFolha(l, t.dataset.folha), c = +t.dataset.col; const atual = (f.colFaz && f.colFaz[c]) || f.faz; const id = l.fazendas[(fzIdx(l, atual) + 1) % l.fazendas.length].id; f.colFaz = f.colFaz || []; f.colFaz[c] = id; f.cells.forEach((cell, k) => { if (Math.floor(k / 20) === c) cell.fz = id; }); save(); renderFolhas(); renderDock(); renderMini(); break; }
+    case 'dockmin': { K.min = !K.min; try { localStorage.setItem('rc_dockmin', K.min ? '1' : '0'); } catch (e) {} renderDock(); seguir(); break; }
     case 'proxcol': { const f = getFolha(l, K.folha); if (f.cells.length % 20 === 0) { toast('Você já está no começo de uma coluna'); break; } const col = Math.floor(f.cells.length / 20); const fz = (l.fazModo === 'col' && f.colFaz && f.colFaz[col]) || f.faz; while (f.cells.length % 20 !== 0) f.cells.push({ w: 0, cat: 'B', n: 0, flag: false, skip: true, fz }); save(); renderFolhas(); renderDock(); seguir(); break; }
     case 'unskip': { const f = getFolha(l, t.dataset.folha); let j = +t.dataset.idx; while (j > 0 && f.cells[j - 1].skip) j--; if (f.cells.slice(j).every(c => c.skip)) { f.cells.splice(j); save(); renderFolhas(); renderDock(); } else toast('Já há pesos depois deste espaço'); break; }
     case 'fazmodo': { l.fazModo = t.dataset.v; if (l.fazModo === 'col') { l.folhas.forEach(f => { f.colFaz = [0, 1, 2, 3].map(c => f.cells[c * 20] ? (f.cells[c * 20].fz || f.faz) : ((f.colFaz && f.colFaz[c]) || f.faz)); }); } save(); renderDados(); break; }
