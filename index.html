@@ -212,12 +212,21 @@ p { margin: 0 0 10px; line-height: 1.4; }
     $('#p-bkp').innerHTML = '<h1>Backup</h1><p class="muted">Tudo fica salvo neste aparelho. O backup é o seu seguro caso o app seja apagado ou você troque de celular.</p>' +
       '<div class="card"><h2>Neste aparelho</h2><div class="cnt"><div><b>' + c.rom + '</b><span>Romaneios</span></div><div><b>' + c.prog + '</b><span>Programações</span></div><div><b>' + c.aba + '</b><span>Abates</span></div></div>' +
       '<p class="small ' + (dias === null || dias > 7 ? 'aviso' : 'muted') + '" style="margin:10px 0 0">' + (dias === null ? 'Você ainda não salvou nenhum backup geral.' : dias === 0 ? 'Último backup geral: hoje.' : 'Último backup geral: há ' + dias + ' dia' + (dias > 1 ? 's' : '') + '.') + '</p></div>' +
+      '<div class="card"><h2>Atualizar o app</h2><p class="small muted">Versão do app: <b id="ap-ver">…</b>. Se alguma novidade não apareceu, toque abaixo: ele baixa tudo de novo (seus dados ficam guardados).</p><button class="btn block" id="ap-upd">Atualizar agora</button></div>' +
       '<div class="card"><h2>Salvar backup geral</h2><p class="small muted">Um arquivo com embarques, programações e abates.</p><button class="btn block" id="bk-exp">Salvar backup geral</button></div>' +
       '<div class="card"><h2>Importar backup</h2><p class="small muted">Escolha o arquivo do backup geral, ou os backups antigos do embarque e do abate (pode escolher os dois de uma vez). O que já estiver aqui é mantido.</p><label class="btn alt block" for="bk-file">Escolher arquivo(s)</label><input id="bk-file" type="file" accept=".json,application/json" multiple hidden></div>' +
       '<div class="msg" id="bk-msg" hidden></div>' +
       '<div class="card"><h2>Cópias automáticas</h2><p class="small muted">O app guarda sozinho uma cópia por dia, dos últimos 30 dias, neste aparelho. Ela não substitui o backup em arquivo.</p>' +
       (snaps.length ? snaps.slice(0, 10).map(function (s) { return '<div class="snap"><span>' + esc(s.dia.replace('~', ' · ')) + '<br><span class="small muted">' + s.c.rom + ' rom. · ' + s.c.prog + ' prog. · ' + s.c.aba + ' abates</span></span><button class="btn alt sm" data-rest="' + esc(s.dia) + '">Restaurar</button></div>'; }).join('') : '<p class="small muted">Ainda não há cópias.</p>') + '</div>';
     $('#bk-exp').onclick = exportar;
+    try { caches.keys().then(function (ks) { var el = $('#ap-ver'); if (el) el.textContent = ks.filter(function (k) { return k.indexOf('rc-gado') === 0; }).join(' ') || 'sem cache'; }); } catch (e) {}
+    $('#ap-upd').onclick = function () {
+      var bt = this; bt.textContent = 'Atualizando…'; bt.disabled = true;
+      var fim = function () { location.replace(location.pathname + '?u=' + Date.now()); };
+      Promise.resolve().then(function () { return navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }) : 0; })
+        .then(function () { return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : 0; })
+        .then(fim, fim);
+    };
     $('#bk-file').onchange = function (e) { if (e.target.files.length) importar(Array.from(e.target.files)); e.target.value = ''; };
     document.querySelectorAll('[data-rest]').forEach(function (b) { b.onclick = async function () {
       if (!confirm('Restaurar a cópia de ' + b.dataset.rest.replace('~', ' · ') + '? O que está no app agora será trocado (antes, o app guarda uma cópia de segurança).')) return;
