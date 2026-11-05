@@ -93,13 +93,13 @@ p { margin: 0 0 10px; line-height: 1.4; }
     (l.fazendas || []).forEach(function (z) { if (z.nome) nomes.push(z.nome); });
     (l.folhas || []).forEach(function (f) { (f.cells || []).forEach(function (c) {
       var k = MAPA[c.cat]; if (!k) return;
-      var r = rendDe(l, f, c), x = cats[k] || (cats[k] = { q: 0, pf: 0, pct: [], grupos: [] });
-      x.q += c.n; x.pf += c.w;
+      var r = rendDe(l, f, c), x = cats[k] || (cats[k] = { q: 0, pf: 0, pct: [], grupos: [], _pp: 0, _pw: 0 });
+      x.q += c.n; x.pf += c.w; var pz = +((l.cats && l.cats[c.cat] && l.cats[c.cat].preco) || 0); if (pz > 0) { x._pp += pz * c.w; x._pw += c.w; }
       var g = x.grupos.filter(function (y) { return y.rend === r; })[0];
       if (!g) { g = { q: 0, pf: 0, rend: r }; x.grupos.push(g); if (r > 0 && x.pct.indexOf(r) < 0) x.pct.push(r); }
       g.q += c.n; g.pf += c.w;
     }); });
-    Object.keys(cats).forEach(function (k) { cats[k].pf = r2(cats[k].pf); cats[k].grupos.forEach(function (g) { g.pf = r2(g.pf); }); });
+    Object.keys(cats).forEach(function (k) { cats[k].preco = cats[k]._pw ? r2(cats[k]._pp / cats[k]._pw) : 0; delete cats[k]._pp; delete cats[k]._pw; cats[k].pf = r2(cats[k].pf); cats[k].grupos.forEach(function (g) { g.pf = r2(g.pf); }); });
     return { frig: l.frigorifico || '', id: l.id, nome: (l.pecuarista || 'Sem pecuarista') + ' · ' + (nomes.join(', ') || 'romaneio'), pecuarista: l.pecuarista || '', data: l.data, cats: cats };
   }
   function romaneios() {

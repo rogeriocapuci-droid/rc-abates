@@ -1067,12 +1067,13 @@ function abateCard(l) {
   let RC = null; try { RC = window.parent !== window && window.parent.RC; } catch (x) {}
   if (!RC || !calc(l, null).cab) return '';
   const d = new Date((l.data || hojeLocal()) + 'T12:00:00'); d.setDate(d.getDate() + 1);
-  const dt = abEnv.d || d.toISOString().slice(0, 10), fr = abEnv.f != null ? abEnv.f : (l.frigorifico || RC.frigorifico() || '');
+  const dt = d.toISOString().slice(0, 10), fr = abEnv.f != null ? abEnv.f : (l.frigorifico || RC.frigorifico() || '');
   const lig = RC.ligados(l.id);
   return `<div class="card"><h3>Enviar para o abate</h3>
     <p class="muted small" style="margin:0 0 8px">Cria o abate com as cabeças, o peso da fazenda e o rendimento combinado. No frigorífico você ajusta o que mudar.</p>
     ${lig.length ? `<p class="small" style="margin:0 0 8px">Já enviado: ${lig.map(x => `<a href="#" data-act="abrirabate" data-id="${esc(x.id)}">${fmtDate(x.data)}${x.frigorifico ? ' · ' + esc(x.frigorifico) : ''}</a>`).join(' · ')}</p>` : ''}
-    <div class="row"><label class="field" style="flex:1"><span>Data do abate</span><input class="inp" type="date" id="ab-data" value="${dt}"></label>
+    <p class="small" style="margin:0 0 8px"><b>Abate: ${fmtDate(dt)}</b> (sempre um dia depois do embarque)</p><input type="hidden" id="ab-data" value="${dt}">
+    <div class="row">
     <label class="field" style="flex:1"><span>Frigorífico</span><input class="inp" id="ab-frig" value="${esc(fr)}" autocomplete="off"></label></div>
     <button class="btn gold" data-act="toabate" style="width:100%;margin-top:8px">${lig.length ? 'Criar outro abate' : 'Enviar para o abate'}</button></div>`;
 }
@@ -1567,6 +1568,14 @@ document.addEventListener('focusin', ev => {
   let nm = []; try { nm = window.parent !== window && window.parent.RC ? window.parent.RC.nomes(kind) : []; } catch (x) {}
   let dl = document.getElementById('dl-' + kind); if (!dl) { dl = document.createElement('datalist'); dl.id = 'dl-' + kind; document.body.appendChild(dl); }
   dl.innerHTML = nm.map(n => '<option value="' + esc(n) + '">').join(''); t.setAttribute('list', dl.id);
+});
+document.addEventListener('focusout', ev => {
+  const t = ev.target; if (!t || t.tagName !== 'INPUT') return;
+  const kind = (t.id === 'f-pec' || t.id === 'pg-pec') ? 'pec' : (t.id === 'f-frig' || t.id === 'pg-frig') ? 'frig' : (t.dataset.pgf === 'faz' || t.dataset.faznome) ? 'faz' : null; if (!kind) return;
+  let nm = []; try { nm = window.parent !== window && window.parent.RC ? window.parent.RC.nomes(kind) : []; } catch (x) {}
+  const v = String(t.value || '').trim().replace(/\s+/g, ' '); if (!v) return;
+  const hit = nm.find(n => norm(n) === norm(v) && n !== v);
+  if (hit) { t.value = hit; t.dispatchEvent(new Event('input', { bubbles: true })); }
 });
 document.addEventListener('input', ev => {
   if (view !== 'progedit') return; const t = ev.target, pr = getProg(); if (!pr) return;
