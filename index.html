@@ -89,18 +89,25 @@ p { margin: 0 0 10px; line-height: 1.4; }
   function r2(x) { return Math.round(x * 100) / 100; }
   function grupos(id) {
     var l = readE().lotes.filter(function (x) { return x.id === id; })[0]; if (!l) return null;
-    var cats = {}, nomes = [];
+    var cats = {}, nomes = [], porF = {};
     (l.fazendas || []).forEach(function (z) { if (z.nome) nomes.push(z.nome); });
-    (l.folhas || []).forEach(function (f) { (f.cells || []).forEach(function (c) {
-      var k = MAPA[c.cat]; if (!k) return;
-      var r = rendDe(l, f, c), x = cats[k] || (cats[k] = { q: 0, pf: 0, pct: [], grupos: [], _pp: 0, _pw: 0 });
+    function acum(cs, k, c, r) {
+      var x = cs[k] || (cs[k] = { q: 0, pf: 0, pct: [], grupos: [], _pp: 0, _pw: 0 });
       x.q += c.n; x.pf += c.w; var pz = +((l.cats && l.cats[c.cat] && l.cats[c.cat].preco) || 0); if (pz > 0) { x._pp += pz * c.w; x._pw += c.w; }
       var g = x.grupos.filter(function (y) { return y.rend === r; })[0];
       if (!g) { g = { q: 0, pf: 0, rend: r }; x.grupos.push(g); if (r > 0 && x.pct.indexOf(r) < 0) x.pct.push(r); }
       g.q += c.n; g.pf += c.w;
+    }
+    function fecha(cs) { Object.keys(cs).forEach(function (k) { cs[k].preco = cs[k]._pw ? r2(cs[k]._pp / cs[k]._pw) : 0; delete cs[k]._pp; delete cs[k]._pw; cs[k].pf = r2(cs[k].pf); cs[k].grupos.forEach(function (g) { g.pf = r2(g.pf); }); }); }
+    (l.folhas || []).forEach(function (f) { (f.cells || []).forEach(function (c) {
+      var k = MAPA[c.cat]; if (!k) return;
+      var r = rendDe(l, f, c), fid = c.fz || f.faz;
+      acum(cats, k, c, r); acum(porF[fid] || (porF[fid] = {}), k, c, r);
     }); });
-    Object.keys(cats).forEach(function (k) { cats[k].preco = cats[k]._pw ? r2(cats[k]._pp / cats[k]._pw) : 0; delete cats[k]._pp; delete cats[k]._pw; cats[k].pf = r2(cats[k].pf); cats[k].grupos.forEach(function (g) { g.pf = r2(g.pf); }); });
-    return { frig: l.frigorifico || '', id: l.id, nome: (l.pecuarista || 'Sem pecuarista') + ' · ' + (nomes.join(', ') || 'romaneio'), pecuarista: l.pecuarista || '', data: l.data, cats: cats };
+    fecha(cats);
+    var fazs = [];
+    (l.fazendas || []).forEach(function (z) { if (porF[z.id]) { fecha(porF[z.id]); fazs.push({ nome: z.nome || 'Sem nome', cats: porF[z.id] }); } });
+    return { frig: l.frigorifico || '', id: l.id, nome: (l.pecuarista || 'Sem pecuarista') + ' · ' + (nomes.join(', ') || 'romaneio'), pecuarista: l.pecuarista || '', data: l.data, cats: cats, fazs: fazs };
   }
   function romaneios() {
     return readE().lotes.map(function (l) {
@@ -225,6 +232,7 @@ p { margin: 0 0 10px; line-height: 1.4; }
     $('#p-bkp').innerHTML = '<h1>Backup</h1><p class="muted">Tudo fica salvo neste aparelho. O backup é o seu seguro caso o app seja apagado ou você troque de celular.</p>' +
       '<div class="card"><h2>Neste aparelho</h2><div class="cnt"><div><b>' + c.rom + '</b><span>Romaneios</span></div><div><b>' + c.prog + '</b><span>Programações</span></div><div><b>' + c.aba + '</b><span>Abates</span></div></div>' +
       '<p class="small ' + (dias === null || dias > 7 ? 'aviso' : 'muted') + '" style="margin:10px 0 0">' + (dias === null ? 'Você ainda não salvou nenhum backup geral.' : dias === 0 ? 'Último backup geral: hoje.' : 'Último backup geral: há ' + dias + ' dia' + (dias > 1 ? 's' : '') + '.') + '</p></div>' +
+      '<div id="corr-box"></div>' +
       '<div class="card"><h2>Atualizar o app</h2><p class="small muted">Versão do app: <b id="ap-ver">…</b>. Se alguma novidade não apareceu, toque abaixo: ele baixa tudo de novo (seus dados ficam guardados).</p><button class="btn block" id="ap-upd">Atualizar agora</button></div>' +
       '<div class="card"><h2>Salvar backup geral</h2><p class="small muted">Um arquivo com embarques, programações e abates.</p><button class="btn block" id="bk-exp">Salvar backup geral</button></div>' +
       '<div class="card"><h2>Importar backup</h2><p class="small muted">Escolha o arquivo do backup geral, ou os backups antigos do embarque e do abate (pode escolher os dois de uma vez). O que já estiver aqui é mantido.</p><label class="btn alt block" for="bk-file">Escolher arquivo(s)</label><input id="bk-file" type="file" accept=".json,application/json" multiple hidden></div>' +
@@ -232,6 +240,20 @@ p { margin: 0 0 10px; line-height: 1.4; }
       '<div class="card"><h2>Cópias automáticas</h2><p class="small muted">O app guarda sozinho uma cópia por dia, dos últimos 30 dias, neste aparelho. Ela não substitui o backup em arquivo.</p>' +
       (snaps.length ? snaps.slice(0, 10).map(function (s) { return '<div class="snap"><span>' + esc(s.dia.replace('~', ' · ')) + '<br><span class="small muted">' + s.c.rom + ' rom. · ' + s.c.prog + ' prog. · ' + s.c.aba + ' abates</span></span><button class="btn alt sm" data-rest="' + esc(s.dia) + '">Restaurar</button></div>'; }).join('') : '<p class="small muted">Ainda não há cópias.</p>') + '</div>';
     $('#bk-exp').onclick = exportar;
+    try { fetch('correcao.json?x=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var box = $('#corr-box'); if (!box || !j || j.app !== 'rcgado-correcao') return;
+      var feito = false; try { feito = !!localStorage.getItem('rc_corr_' + j.id); } catch (e) {}
+      var nz = function (x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+      var L = (j.embarques.lotes || [])[0] || {}, acha = null;
+      readE().lotes.forEach(function (o) { var a = nz(o.pecuarista), b2 = nz(L.pecuarista); if (!o.exemplo && (a === b2 || a.indexOf(b2) === 0 || b2.indexOf(a) === 0) && Math.abs(new Date(o.data) - new Date(L.data)) / 864e5 <= 2) acha = o; });
+      var info = acha ? 'Vai trocar o romaneio que está no app (' + esc(acha.pecuarista) + ', ' + esc(acha.data) + ') por este.' : 'Não achei romaneio antigo desse pecuarista nesse dia; vai entrar como um novo.';
+      box.innerHTML = '<div class="card"><h2>Correção pronta</h2><p class="small muted"><b>' + esc(j.titulo) + '</b><br>' + esc(j.desc) + '<br>' + info + ' Mantém programação, frigorífico e preços.' + (feito ? '<br><b>Já aplicada neste aparelho.</b>' : '') + '</p><button class="btn block" id="corr-ok">' + (feito ? 'Aplicar de novo' : 'Aplicar correção') + '</button></div>';
+      $('#corr-ok').onclick = async function () {
+        this.disabled = true; await snapSave('antes-correcao');
+        var r = mergeE(j.embarques || {}); try { localStorage.setItem('rc_corr_' + j.id, String(Date.now())); } catch (e) {}
+        if (r.rom) recarregar(); await renderBkp(); msg(r.rom ? 'Correção aplicada: ' + esc(j.titulo) + '. Abra Embarque para conferir.' : 'Nada foi trocado.', !!r.rom);
+      };
+    }).catch(function () {}); } catch (e) {}
     try { caches.keys().then(function (ks) { var el = $('#ap-ver'); if (el) el.textContent = ks.filter(function (k) { return k.indexOf('rc-gado') === 0; }).join(' ') || 'sem cache'; }); } catch (e) {}
     $('#ap-upd').onclick = function () {
       var bt = this; bt.textContent = 'Atualizando…'; bt.disabled = true;
