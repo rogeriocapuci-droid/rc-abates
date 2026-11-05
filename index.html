@@ -113,14 +113,22 @@ p { margin: 0 0 10px; line-height: 1.4; }
     var E = readE();
     return E.progs.map(function (pr) {
       var m = 0, f = 0; (pr.itens || []).forEach(function (it) { m += +it.B || 0; f += (+it.V || 0) + (+it.N || 0) + (+it.F || 0); });
-      var pesado = E.lotes.some(function (l) { return l.data === pr.data && (!pr.pecuarista || !l.pecuarista || nrm(pr.pecuarista) === nrm(l.pecuarista)) && (l.folhas || []).some(function (f) { return (f.cells || []).length; }); });
+      var pesado = E.lotes.some(function (l) { return l.progId === pr.id || !l.progId && l.data === pr.data && (!pr.pecuarista || !l.pecuarista || nrm(pr.pecuarista) === nrm(l.pecuarista)) && (l.folhas || []).some(function (f) { return (f.cells || []).length; }); });
       return { id: pr.id, data: pr.data, pec: pr.pecuarista || '', frig: pr.frigorifico || '', m: m, f: f, cab: m + f, pesado: pesado };
     }).filter(function (p) { return p.cab > 0; });
   }
   function nrm(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+  function nomes(kind) {
+    var E = readE(), A = readA(), seen = {}, out = [];
+    function add(n) { n = String(n || '').trim().replace(/\s+/g, ' '); if (n.length < 2) return; var k = nrm(n); if (seen[k]) return; seen[k] = 1; out.push(n); }
+    if (kind === 'pec') { E.lotes.forEach(function (l) { add(l.pecuarista); }); E.progs.forEach(function (p) { add(p.pecuarista); }); Object.keys(A).forEach(function (i) { add(A[i].pecuarista); }); }
+    else if (kind === 'frig') { E.lotes.forEach(function (l) { add(l.frigorifico); }); E.progs.forEach(function (p) { add(p.frigorifico); }); Object.keys(A).forEach(function (i) { add(A[i].frigorifico); }); }
+    else { E.lotes.forEach(function (l) { (l.fazendas || []).forEach(function (z) { add(z.nome); }); }); E.progs.forEach(function (p) { (p.itens || []).forEach(function (i) { add(i.faz); }); }); }
+    return out.sort(function (a, b) { return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }); });
+  }
   function abateWin() { return $('#f-aba').contentWindow; }
   window.RC = {
-    romaneios: romaneios, grupos: grupos, progs: progs,
+    romaneios: romaneios, grupos: grupos, progs: progs, nomes: nomes,
     ligados: function (id) { try { return abateWin().RC_ABATE.ligados(id); } catch (e) { return []; } },
     frigorifico: function () { try { return abateWin().RC_ABATE.frigorifico(); } catch (e) { return ''; } },
     enviar: async function (id, data, frig) { go('aba'); try { return await abateWin().RC_ABATE.novoDoRomaneio({ id: id, data: data, frigorifico: frig }); } catch (e) { return false; } },

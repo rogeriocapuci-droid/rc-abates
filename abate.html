@@ -635,12 +635,13 @@ input[type="date"] { flex: 1 1 0; }
     var rc = RCX(); if (!rc || S.loading) return '';
     var ont = shiftDate(S.date, -1), feito = {}, fp = {};
     S.all.forEach(function (r) { (r.roms || []).forEach(function (x) { feito[x.id] = 1; }); if (r.prog) fp[r.prog] = 1; });
-    var ps = rc.romaneios().filter(function (r) { return r.data === ont && !feito[r.id]; });
-    var pg = rc.progs().filter(function (p) { return p.data === ont && !p.pesado && !fp[p.id]; });
+    var lim = shiftDate(S.date, -3), dd = function (d) { return d === ont ? 'ontem' : d.slice(8) + '/' + d.slice(5, 7); };
+    var ps = rc.romaneios().filter(function (r) { return r.data < S.date && r.data >= lim && !feito[r.id]; });
+    var pg = rc.progs().filter(function (p) { return p.data < S.date && p.data >= lim && !p.pesado && !fp[p.id]; });
     if (!ps.length && !pg.length) return '';
     var bx = function (tit, sub, btn, attr) { return '<div class="cartao" style="border-color:var(--accent)"><b>' + tit + '</b><p class="hint" style="margin:2px 0 8px">' + sub + '</p><button type="button" class="btn primary rbtn" style="margin:0" ' + attr + '>' + btn + '</button></div>'; };
-    return ps.map(function (r) { return bx('Embarcou ontem: ' + esc(r.pec || 'Sem pecuarista'), esc(r.fazs || '') + ' · ' + p0(r.cab) + ' cabeças · ' + p0(r.peso) + ' kg' + (r.frig ? ' · ' + esc(r.frig) : ''), 'Criar abate' + (r.frig ? ' no ' + esc(r.frig) : ''), 'data-act="rom-novo" data-id="' + esc(r.id) + '"'); }).join('') +
-      pg.map(function (p) { return bx('Programado ontem: ' + esc(p.pec || 'Sem pecuarista'), p0(p.cab) + ' cabeças (' + p0(p.m) + ' machos · ' + p0(p.f) + ' fêmeas)' + (p.frig ? ' · ' + esc(p.frig) : '') + ' · ainda sem pesagem', 'Criar abate' + (p.frig ? ' no ' + esc(p.frig) : ''), 'data-act="prog-novo" data-id="' + esc(p.id) + '"'); }).join('');
+    return ps.map(function (r) { return bx('Embarcou ' + dd(r.data) + ': ' + esc(r.pec || 'Sem pecuarista'), esc(r.fazs || '') + ' · ' + p0(r.cab) + ' cabeças · ' + p0(r.peso) + ' kg' + (r.frig ? ' · ' + esc(r.frig) : ''), 'Criar abate' + (r.frig ? ' no ' + esc(r.frig) : ''), 'data-act="rom-novo" data-id="' + esc(r.id) + '"'); }).join('') +
+      pg.map(function (p) { return bx('Programado ' + dd(p.data) + ': ' + esc(p.pec || 'Sem pecuarista'), p0(p.cab) + ' cabeças (' + p0(p.m) + ' machos · ' + p0(p.f) + ' fêmeas)' + (p.frig ? ' · ' + esc(p.frig) : '') + ' · ainda sem pesagem', 'Criar abate' + (p.frig ? ' no ' + esc(p.frig) : ''), 'data-act="prog-novo" data-id="' + esc(p.id) + '"'); }).join('');
   }
   function renderList() {
     var box = $('#cards');
@@ -673,6 +674,7 @@ input[type="date"] { flex: 1 1 0; }
       if (n.length < 2 || seen[norm(n)]) return;
       seen[norm(n)] = 1; out.push(n);
     });
+    try { var rc = RCX(); if (rc) rc.nomes(kind).forEach(function (n) { if (!seen[norm(n)]) { seen[norm(n)] = 1; out.push(n); } }); } catch (e) {}
     return out.sort(function (a, b) { return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }); });
   }
   function updateSug(kind) {
@@ -977,7 +979,12 @@ input[type="date"] { flex: 1 1 0; }
     var r = S.recs.find(function (x) { return x.id === id; });
     if (!r) return;
     S.draft = normalize(clone(r)); S.openId = id; S.isNew = false; S.dirty = false;
+    var rc = RCX(), mud = [];
+    if (rc && S.draft.roms && S.draft.roms.length) {
+      S.draft.roms = S.draft.roms.map(function (o) { var g = rc.grupos(o.id); if (!g) return o; var n = snapRom(g), qo = 0, qn = 0; CATN.forEach(function (k) { qo += (o.cats[k] || {}).q || 0; qn += (n.cats[k] || {}).q || 0; }); if (qo !== qn) mud.push(o.nome + ': ' + qo + ' → ' + qn + ' cab'); return n; });
+    }
     renderEditor(); renderList(); setView('edit'); window.scrollTo(0, 0);
+    if (mud.length) toast('O romaneio mudou depois que você trouxe: ' + mud.join(' · '));
   }
   function lastFrig() {
     var best = null;

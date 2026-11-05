@@ -1439,7 +1439,8 @@ function pgTot(pr) { const t = { B: 0, V: 0, N: 0, F: 0, all: 0 }; pr.itens.forE
 /* pesado: soma dos romaneios da mesma data cuja fazenda tem o mesmo nome */
 function pgPesado(pr, it) {
   const r = { B: 0, V: 0, N: 0, F: 0, achou: false }; const alvo = norm(it.faz); if (!alvo) return r;
-  DB.lotes.forEach(l => { if (l.data !== pr.data) return; if (pr.pecuarista && l.pecuarista && norm(pr.pecuarista) !== norm(l.pecuarista)) return;
+  const lig = DB.lotes.filter(l => l.progId === pr.id);
+  (lig.length ? lig : DB.lotes.filter(l => !l.progId)).forEach(l => { if (!lig.length) { if (l.data !== pr.data) return; if (pr.pecuarista && l.pecuarista && norm(pr.pecuarista) !== norm(l.pecuarista)) return; }
     l.fazendas.forEach(z => { if (norm(z.nome) !== alvo) return; r.achou = true; const c = calc(l, z.id).per;
       r.B += c.B.cab + c.C.cab + c.M.cab; r.V += c.V.cab + c.L.cab; r.N += c.N.cab; }); });
   r.F = r.V + r.N; return r;
@@ -1550,14 +1551,22 @@ document.addEventListener('click', ev => {
   else if (a === 'pgcopy') pgCopiar();
   else if (a === 'pgcopydia') pgCopiarTexto(pgResumoDia(t.dataset.d));
   else if (a === 'pgromaneio') { const pr = DB.progs.find(x => x.id === t.dataset.id); if (!pr) return;
-    let l = pr.pecuarista ? DB.lotes.find(x => x.data === pr.data && norm(x.pecuarista) === norm(pr.pecuarista)) : null;
+    let l = DB.lotes.find(x => x.progId === pr.id) || (pr.pecuarista ? DB.lotes.find(x => !x.progId && x.data === pr.data && norm(x.pecuarista) === norm(pr.pecuarista)) : null);
     if (!l) { l = newLote(); l.data = pr.data; l.pecuarista = pr.pecuarista || ''; l.frigorifico = pr.frigorifico || ''; const nomes = []; pr.itens.forEach(it => { if (it.faz && !nomes.some(n => norm(n) === norm(it.faz))) nomes.push(it.faz); });
       if (nomes.length) l.fazendas = nomes.map((n, i) => ({ id: 'f' + (i + 1), nome: n })); DB.lotes.push(l); toast('Romaneio criado com as fazendas e porcentagens da programação'); }
-    l.fazRend = l.fazRend || {}; if (pr.frigorifico && !l.frigorifico) l.frigorifico = pr.frigorifico;
+    l.progId = pr.id; l.fazRend = l.fazRend || {}; if (pr.frigorifico && !l.frigorifico) l.frigorifico = pr.frigorifico;
     pr.itens.forEach(it => { if (!it.faz) return; let z = l.fazendas.find(x => norm(x.nome) === norm(it.faz)); if (!z) { if (l.fazendas.length === 1 && !l.fazendas[0].nome) { z = l.fazendas[0]; z.nome = it.faz; } else { z = { id: uid(), nome: it.faz }; l.fazendas.push(z); } }
       PGR.forEach(([k]) => { const v = it.rend && +it.rend[k]; if (v > 0) { l.fazRend[z.id] = l.fazRend[z.id] || {}; if (!(l.fazRend[z.id][k] > 0)) l.fazRend[z.id][k] = v; if (l.fazendas.length === 1) l.cats[k].rend = v; } }); });
     save();
     curId = l.id; tab = 'pes'; K.sel = null; K.folha = null; K.faz = null; K.buf = ''; K.cat = 'B'; renderEditor(); window.scrollTo(0, 0); }
+});
+/* sugestões de nomes compartilhadas com o abate (evita Sonia / Sônia / Sônia R.) */
+document.addEventListener('focusin', ev => {
+  const t = ev.target; if (!t || t.tagName !== 'INPUT') return;
+  const kind = (t.id === 'f-pec' || t.id === 'pg-pec') ? 'pec' : (t.id === 'f-frig' || t.id === 'pg-frig') ? 'frig' : (t.dataset.pgf === 'faz' || t.dataset.faznome) ? 'faz' : null; if (!kind) return;
+  let nm = []; try { nm = window.parent !== window && window.parent.RC ? window.parent.RC.nomes(kind) : []; } catch (x) {}
+  let dl = document.getElementById('dl-' + kind); if (!dl) { dl = document.createElement('datalist'); dl.id = 'dl-' + kind; document.body.appendChild(dl); }
+  dl.innerHTML = nm.map(n => '<option value="' + esc(n) + '">').join(''); t.setAttribute('list', dl.id);
 });
 document.addEventListener('input', ev => {
   if (view !== 'progedit') return; const t = ev.target, pr = getProg(); if (!pr) return;
