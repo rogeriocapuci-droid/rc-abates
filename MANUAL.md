@@ -1,6 +1,6 @@
 # Manual do App Abate (Fechamento de Abate)
 
-Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 34, 06/11/2026. Atenção: hoje o app é um conjunto (`index.html` com as abas, `abate.html` = aba Abate, `embarques.html` = aba Embarque); as telas do abate ficam no `abate.html`.
+Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 35, 06/11/2026. Atenção: hoje o app é um conjunto (`index.html` com as abas, `abate.html` = aba Abate, `embarques.html` = aba Embarque); as telas do abate ficam no `abate.html`.
 
 ## 1. O que tem nesta pasta
 
@@ -91,6 +91,7 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 
 ## 9. Histórico de versões
 
+- **v35:** lote com vaca + novilha tem **preço separado por categoria** (Fazenda e Frigorífico, um campo para cada). O valor pago ao pecuarista = peso esperado de cada categoria ÷ 15 × preço dela; a venda ao frigorífico divide a carcaça (que é única) na proporção do peso esperado de cada categoria. Vale para o romaneio e para o botão Juntar. Ao remover um lote vindo do romaneio, o romaneio fica livre para ser trazido de novo.
 - **v34:** ao juntar vaca + novilha (romaneio ou botão Juntar), o preço da fazenda e o do frigorífico viram a média ponderada (pelo peso esperado e pelo peso da carcaça), em vez de usar só o preço da vaca. Lotes já juntados antes continuam com o preço antigo: corrija o preço à mão.
 - **v33:** campos do bloco 2 compactos (Peso entrada 108 px, sequências 78 px, lado a lado e alinhados à esquerda); campos e links um pouco mais baixos em todo o app.
 - **v32:** botão **Juntar vaca + novilha** no cabeçalho do lote (aparece quando há lote de vaca e de novilha da mesma fazenda): soma cabeças, pesos e carcaça e mantém os rendimentos como partes. Serve para lançamentos que já tinham sido trazidos separados.

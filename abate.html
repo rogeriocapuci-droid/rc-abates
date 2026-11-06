@@ -405,7 +405,7 @@ input[type="date"] { flex: 1 1 0; }
   function signed(n, fn) { return (n > 0 ? '+' : n < 0 ? '−' : '') + fn(Math.abs(n)); }
 
   /* ---------- modelo ---------- */
-  function newLot(cat) { return { id: uid(), cat: cat || 'boi', cat2: '', faz: '', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', pcomp: '', pvend: '', bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
+  function newLot(cat) { return { id: uid(), cat: cat || 'boi', cat2: '', faz: '', qtd: '', pf: '', rend: '', pe: '', pc: '', pcm: 'media', partes: [], cur: ['', '', ''], si: '', sf: '', prec: '', pcomp: '', pvend: '', pcomp2: '', pvend2: '', sp: null, bez: { g: '', m: '', p: '' }, lem: { prec: false, brin: false, pvf: false, pvg: false, pm: false } }; }
   function newRec(date) { return { id: uid(), data: date, frigorifico: '', pecuarista: '', ts: Date.now(), obs: OBS_PADRAO, lotes: [newLot()] }; }
   var MAXP = 4;
   /* Formato antigo: um único segundo rendimento (q2 e rend2) tirado do total de cabeças e do peso. Vira a parte 2, com o peso dividido por cabeça. */
@@ -838,7 +838,7 @@ input[type="date"] { flex: 1 1 0; }
       });
     });
     if (G.length > MAXP + 1) return false;
-    var ka = calc(a), kb = calc(b), soma = function (x, y) { return x == null && y == null ? '' : fmtN((x || 0) + (y || 0), 0, 2); };
+    a.cat0 = a.cat; var ka = calc(a), kb = calc(b), soma = function (x, y) { return x == null && y == null ? '' : fmtN((x || 0) + (y || 0), 0, 2); };
     G.forEach(function (g) { g.q = String(g.q); g.pf = fmtN(Math.round(g.pf * 100) / 100, 0, 2); });
     a.qtd = G[0] ? G[0].q : ''; a.pf = G[0] ? G[0].pf : ''; a.rend = G[0] ? G[0].r : '';
     a.partes = G.slice(1).map(function (g) { return { q: g.q, pf: g.pf, rend: g.r }; });
@@ -847,12 +847,12 @@ input[type="date"] { flex: 1 1 0; }
     ['g', 'm', 'p'].forEach(function (z) { var t = (num(a.bez[z]) || 0) + (num(b.bez[z]) || 0); a.bez[z] = t ? String(t) : ''; });
     a.prec = String(a.prec).trim() === '' && String(b.prec).trim() === '' ? '' : String((num(a.prec) || 0) + (num(b.prec) || 0));
     Object.keys(a.lem).forEach(function (z) { a.lem[z] = a.lem[z] || b.lem[z]; });
-    var pa = num(a.pcomp), pb = num(b.pcomp), va = num(a.pvend), vb = num(b.pvend);
-    if (pa != null || pb != null) a.pcomp = fmtN(pMed(pa, ka.esp || 0, pb, kb.esp || 0), 2, 2);
-    if (va != null || vb != null) a.pvend = fmtN(pMed(va, ka.pc || 0, vb, kb.pc || 0), 2, 2);
+    /* Preços ficam separados por categoria (cada uma é paga pelo seu preço). */
+    var it = [{ c: a.cat0, e: ka.esp || 0, pc: a.pcomp, pv: a.pvend }, { c: b.cat, e: kb.esp || 0, pc: b.pcomp, pv: b.pvend }].sort(function (x, y) { return CATN.indexOf(x.c) - CATN.indexOf(y.c); });
+    a.sp = [it[0].e, it[1].e]; a.pcomp = it[0].pc; a.pvend = it[0].pv; a.pcomp2 = it[1].pc; a.pvend2 = it[1].pv;
     ['si', 'sf'].forEach(function (z) { if (!String(a[z]).trim()) a[z] = b[z]; });
     for (var n = 0; n < 3; n++) if (!String(a.cur[n]).trim()) a.cur[n] = b.cur[n];
-    D.lotes.splice(j, 1); return true;
+    delete a.cat0; D.lotes.splice(j, 1); return true;
   }
   function lotHTML(l, i, n) {
     var cats = ['boi', 'vaca', 'novilha', 'touro'];
@@ -903,7 +903,10 @@ input[type="date"] { flex: 1 1 0; }
         (l.lem.prec ? field(i, 'prec', 'Precoce (cabeças que deram)', l.prec, { mode: 'numeric', max: 3 }) : '') + '</div>' +
         (l.lem.prec ? '' : '<p class="hint">Para lançar o precoce, marque Precoce em Conferir no abate (bloco 1).</p>') + bez) +
       blk(4, 'Preço (interno)', 'não vai para o pecuarista',
-        '<div class="grid two">' + field(i, 'pcomp', 'Fazenda (R$/@)', l.pcomp, { w: 0 }) + field(i, 'pvend', 'Frigorífico (R$/@)', l.pvend, { w: 0 }) + '</div>' +
+        (l.cat2 && l.sp
+          ? '<div class="grid two">' + field(i, 'pcomp', 'Fazenda · ' + CATS[l.cat][2] + ' (R$/@)', l.pcomp, { w: 0 }) + field(i, 'pvend', 'Frigorífico · ' + CATS[l.cat][2] + ' (R$/@)', l.pvend, { w: 0 }) + '</div>' +
+            '<div class="grid two">' + field(i, 'pcomp2', 'Fazenda · ' + CATS[l.cat2][2] + ' (R$/@)', l.pcomp2, { w: 0 }) + field(i, 'pvend2', 'Frigorífico · ' + CATS[l.cat2][2] + ' (R$/@)', l.pvend2, { w: 0 }) + '</div>'
+          : '<div class="grid two">' + field(i, 'pcomp', 'Fazenda (R$/@)', l.pcomp, { w: 0 }) + field(i, 'pvend', 'Frigorífico (R$/@)', l.pvend, { w: 0 }) + '</div>') +
         '<p class="hint" data-preco="' + i + '"></p>') +
       '</div>';
   }
@@ -1235,7 +1238,7 @@ input[type="date"] { flex: 1 1 0; }
           else if (fem(c0) && set.every(fem)) set.push(c0);
           else set = [c0];
           set.sort(function (a, b) { return CATN.indexOf(a) - CATN.indexOf(b); });
-          l.cat = set[0]; l.cat2 = set[1] || '';
+          l.cat = set[0]; l.cat2 = set[1] || ''; if (!l.cat2) { l.sp = null; l.pcomp2 = ''; l.pvend2 = ''; }
           if (!String(l.rend).trim()) { var dr0 = defRend(l.cat); if (dr0) l.rend = dr0; }
           touched(); renderEditor(); return;
         }
@@ -1273,7 +1276,7 @@ input[type="date"] { flex: 1 1 0; }
       if (a === 'back') closeEditor();
       else if (a === 'add-lot') { var nl0 = newLot(); var ul = S.draft.lotes[S.draft.lotes.length - 1]; if (ul && ul.faz) nl0.faz = ul.faz; var dr1 = defRend('boi'); if (dr1) nl0.rend = dr1; S.draft.lotes.push(nl0); touched(); renderEditor(); }
       else if (a === 'join-lot') { var jj = parJunta(S.draft, +b.dataset.l); if (jj >= 0 && juntaLotes(S.draft, +b.dataset.l, jj)) { touched(); renderEditor(); toast('Lotes juntados'); } else toast('Não deu para juntar (muitos rendimentos diferentes)'); }
-      else if (a === 'rm-lot') arm(b, 'Toque de novo para remover', function () { S.draft.lotes.splice(+b.dataset.l, 1); touched(); renderEditor(); });
+      else if (a === 'rm-lot') arm(b, 'Toque de novo para remover', function () { var rl = S.draft.lotes.splice(+b.dataset.l, 1)[0]; if (rl && rl.src && !S.draft.lotes.some(function (z) { return z.src && z.src.rid === rl.src.rid; })) S.draft.roms = (S.draft.roms || []).filter(function (r) { return r.id !== rl.src.rid; }); touched(); renderEditor(); });
       else if (a === 'pick') {
         var kd = b.dataset.kind, isP = kd === 'pec';
         if (isP) S.draft.pecuarista = b.dataset.name; else S.draft.frigorifico = b.dataset.name;
@@ -1315,11 +1318,12 @@ input[type="date"] { flex: 1 1 0; }
     var out = [];
     /* Fêmeas ficam juntas no abate: vaca + novilha viram um lote só (categorias Vaca e Novilha marcadas). */
     var V = cats.vaca, N = cats.novilha, junta = V && N && V.q > 0 && N.q > 0 && V.grupos && V.grupos.length && N.grupos && N.grupos.length;
+    if (junta) { var nd = {}; V.grupos.concat(N.grupos).forEach(function (z) { nd[String(z.rend)] = 1; }); if (Object.keys(nd).length > MAXP + 1) junta = false; }
     if (junta) {
       var gm = {}, ordem = [];
       V.grupos.concat(N.grupos).forEach(function (z) { var kk = String(z.rend); if (!gm[kk]) { gm[kk] = { q: 0, pf: 0, rend: z.rend }; ordem.push(kk); } gm[kk].q += z.q; gm[kk].pf += z.pf; });
       cats = Object.assign({}, cats); delete cats.novilha;
-      cats.vaca = Object.assign({}, V, { q: V.q + N.q, grupos: ordem.map(function (kk) { return gm[kk]; }), preco: pMed(V.preco, espG(V), N.preco, espG(N)) });
+      cats.vaca = Object.assign({}, V, { q: V.q + N.q, grupos: ordem.map(function (kk) { return gm[kk]; }), preco: V.preco, preco2: N.preco, esp2: [espG(V), espG(N)] });
     }
     CATN.forEach(function (k) {
       var x = cats[k]; if (!x || !(x.q > 0) || !x.grupos || !x.grupos.length) return;
@@ -1330,6 +1334,7 @@ input[type="date"] { flex: 1 1 0; }
         l.partes = ch.slice(1).map(function (p) { return { q: String(p.q), pf: fmtN(p.pf, 0, 2), rend: String(p.rend).replace('.', ',') }; });
         l.src = { rid: g.id, cat: k }; if (junta && k === 'vaca') l.cat2 = 'novilha'; if (faz) { l.src.faz = faz; l.faz = faz; }
         if (x.preco > 0) { l.pcomp = fmtN(x.preco, 2, 2); l.pvend = l.pcomp; }
+        if (junta && k === 'vaca') { l.sp = x.esp2; if (x.preco2 > 0) { l.pcomp2 = fmtN(x.preco2, 2, 2); l.pvend2 = l.pcomp2; } }
         out.push(l);
       }
     });
@@ -1392,6 +1397,13 @@ input[type="date"] { flex: 1 1 0; }
     var k = calc(l), pc = num(l.pcomp), pv = num(l.pvend), r = { k: k, pc: pc, pv: pv };
     r.arrC = k.esp != null ? k.esp / 15 : null; r.vc = r.arrC != null && pc != null ? r.arrC * pc : null;
     r.arrV = k.pc != null ? k.pc / 15 : null; r.vv = r.arrV != null && pv != null ? r.arrV * pv : null;
+    if (l.cat2 && l.sp && l.sp.length === 2 && (l.sp[0] + l.sp[1]) > 0) {
+      var ea = l.sp[0], eb = l.sp[1], p2 = num(l.pcomp2), v2 = num(l.pvend2), tt = ea + eb;
+      r.dual = true; r.ea = ea / 15; r.eb = eb / 15; r.p2 = p2; r.v2 = v2;
+      r.vc = pc != null && p2 != null ? r.ea * pc + r.eb * p2 : null;
+      r.va = k.pc != null ? k.pc * ea / tt / 15 : null; r.vb = k.pc != null ? k.pc * eb / tt / 15 : null;
+      r.vv = r.va != null && pv != null && v2 != null ? r.va * pv + r.vb * v2 : null;
+    }
     r.dif = r.vc != null && r.vv != null ? r.vv - r.vc : null; return r;
   }
   var brl = function (n) { return 'R$ ' + fmtN(n, 2, 2); };
@@ -1399,8 +1411,13 @@ input[type="date"] { flex: 1 1 0; }
     var D = S.draft; if (!D) return;
     D.lotes.forEach(function (l, i) {
       var h = $('[data-preco="' + i + '"]'); if (!h) return; var r = precoCalc(l), t = [];
+      if (r.dual) {
+        if (r.vc != null) t.push('Pago ao pecuarista: ' + CATS[l.cat][2] + ' ' + f2(r.ea) + ' @ × ' + f2(r.pc) + ' + ' + CATS[l.cat2][2] + ' ' + f2(r.eb) + ' @ × ' + f2(r.p2) + ' = ' + brl(r.vc));
+        if (r.vv != null) t.push('Venda ao frigorífico (carcaça dividida pela proporção esperada): ' + CATS[l.cat][2] + ' ' + f2(r.va) + ' @ × ' + f2(r.pv) + ' + ' + CATS[l.cat2][2] + ' ' + f2(r.vb) + ' @ × ' + f2(r.v2) + ' = ' + brl(r.vv));
+      } else {
       if (r.vc != null) t.push('Pago ao pecuarista (rendimento combinado): ' + f2(r.arrC) + ' @ × ' + f2(r.pc) + ' = ' + brl(r.vc));
       if (r.vv != null) t.push('Venda ao frigorífico (peso real): ' + f2(r.arrV) + ' @ × ' + f2(r.pv) + ' = ' + brl(r.vv));
+      }
       if (r.dif != null) t.push('<b>' + (r.dif >= 0 ? 'Resultado: ' : 'Prejuízo: ') + signed(Math.round(r.dif * 100) / 100, f2) + ' R$</b>' + (r.k.q ? ' (' + signed(Math.round(r.dif / r.k.q * 100) / 100, f2) + ' por cabeça)' : ''));
       h.innerHTML = t.length ? t.join('<br>') : 'Informe os dois preços e o peso do frigorífico para ver o resultado.';
     });
