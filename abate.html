@@ -1147,9 +1147,10 @@ input[type="date"] { flex: 1 1 0; }
     if (f === 'qtd' || f === 'prec') return v.replace(/\D/g, '').slice(0, 3);
     if (f.indexOf('cur.') === 0) return v.replace(/\D/g, '').slice(0, 2);
     if (f === 'rend') return v.replace(/\./g, ',').replace(/[^\d,]/g, '').slice(0, 4);
-    if (f === 'pf') {
+    if (f === 'si' || f === 'sf') return v.replace(/\D/g, '').slice(0, 4);
+    if (f === 'pf' || f === 'pe') {
       var c = v.replace(/[^\d.,]/g, ''), k = c.indexOf(','), ip = k < 0 ? c : c.slice(0, k), dp = k < 0 ? null : c.slice(k + 1).replace(/\D/g, '').slice(0, 2);
-      var n = 0; ip = ip.split('').filter(function (ch) { if (ch === '.') return true; n++; return n <= 6; }).join('');
+      var n = 0; ip = ip.split('').filter(function (ch) { if (ch === '.') return true; n++; return n <= (f === 'pe' ? 5 : 6); }).join('');
       return dp == null ? ip : ip + ',' + dp;
     }
     return v;
@@ -1190,7 +1191,7 @@ input[type="date"] { flex: 1 1 0; }
       var t = e.target, f = t.dataset.f;
       if (!f || !S.draft) return;
       var D = S.draft;
-      if (f === 'qtd' || f === 'pf' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
+      if (f === 'qtd' || f === 'pf' || f === 'pe' || f === 'si' || f === 'sf' || f === 'rend' || f.indexOf('p.') === 0 || f === 'prec' || f.indexOf('cur.') === 0) { var cv = clean(f, t.value); if (cv !== t.value) t.value = cv; }
       if (f === 'name') { D.pecuarista = t.value; S.q.pec = t.value; S.open.pec = true; updateSug('pec'); }
       else if (f === 'frig') { D.frigorifico = t.value; S.q.frig = t.value; S.open.frig = true; updateSug('frig'); }
       else if (f === 'obs') D.obs = t.value;
@@ -1300,7 +1301,22 @@ input[type="date"] { flex: 1 1 0; }
   }
   /* Mais de uma fazenda: um lote por fazenda e categoria (cada fazenda tem a sua nota e o frigorífico não mistura). */
   function lotsFromRom(g) {
-    if (g.fazs && g.fazs.length > 1) { var out = []; g.fazs.forEach(function (z) { out = out.concat(lotsFromCats(g, z.cats, z.nome)); }); return out; }
+    if (g.fazs && g.fazs.length > 1) {
+      /* Só separa lote quando muda o NOME da fazenda: fazendas com o mesmo nome são somadas. */
+      var porNome = {}, ordem = [];
+      g.fazs.forEach(function (z) {
+        var kn = norm(z.nome); if (!porNome[kn]) { porNome[kn] = { nome: z.nome, cats: {} }; ordem.push(kn); }
+        var A = porNome[kn].cats;
+        Object.keys(z.cats).forEach(function (k) {
+          var x = z.cats[k], a = A[k] || (A[k] = { q: 0, pf: 0, pct: [], grupos: [], preco: 0 });
+          a.q += x.q; a.pf += x.pf; if (!(a.preco > 0) && x.preco > 0) a.preco = x.preco;
+          (x.grupos || []).forEach(function (gr) { var h = a.grupos.filter(function (y) { return String(y.rend) === String(gr.rend); })[0]; if (!h) a.grupos.push(h = { q: 0, pf: 0, rend: gr.rend }); h.q += gr.q; h.pf += gr.pf; });
+        });
+      });
+      var out = []; ordem.forEach(function (kn) { out = out.concat(lotsFromCats(g, porNome[kn].cats, porNome[kn].nome)); });
+      if (ordem.length > 1) return out;
+      return lotsFromCats(g, porNome[ordem[0]].cats, '');
+    }
     return lotsFromCats(g, g.cats, '');
   }
   function lotEmpty(l) { return !String(l.qtd).trim() && !String(l.pf).trim() && !String(l.rend).trim() && !String(l.pe).trim() && !String(l.pc).trim() && !(l.partes && l.partes.length); }
