@@ -847,7 +847,9 @@ input[type="date"] { flex: 1 1 0; }
     ['g', 'm', 'p'].forEach(function (z) { var t = (num(a.bez[z]) || 0) + (num(b.bez[z]) || 0); a.bez[z] = t ? String(t) : ''; });
     a.prec = String(a.prec).trim() === '' && String(b.prec).trim() === '' ? '' : String((num(a.prec) || 0) + (num(b.prec) || 0));
     Object.keys(a.lem).forEach(function (z) { a.lem[z] = a.lem[z] || b.lem[z]; });
-    if (!a.pcomp) a.pcomp = b.pcomp; if (!a.pvend) a.pvend = b.pvend;
+    var pa = num(a.pcomp), pb = num(b.pcomp), va = num(a.pvend), vb = num(b.pvend);
+    if (pa != null || pb != null) a.pcomp = fmtN(pMed(pa, ka.esp || 0, pb, kb.esp || 0), 2, 2);
+    if (va != null || vb != null) a.pvend = fmtN(pMed(va, ka.pc || 0, vb, kb.pc || 0), 2, 2);
     ['si', 'sf'].forEach(function (z) { if (!String(a[z]).trim()) a[z] = b[z]; });
     for (var n = 0; n < 3; n++) if (!String(a.cur[n]).trim()) a.cur[n] = b.cur[n];
     D.lotes.splice(j, 1); return true;
@@ -1306,6 +1308,9 @@ input[type="date"] { flex: 1 1 0; }
   function snapRom(g) { return { id: g.id, nome: g.nome, cats: snapCats(g.cats), fazs: (g.fazs && g.fazs.length > 1) ? g.fazs.map(function (z) { return { nome: z.nome, cats: snapCats(z.cats) }; }) : [] }; }
   function romSexF(faz, sx) { var t = { q: 0, pf: 0 }; ((S.draft && S.draft.roms) || []).forEach(function (r) { (r.fazs || []).forEach(function (z) { if (z.nome !== faz) return; CATN.forEach(function (c) { if (SEXO[c] === sx && z.cats[c]) { t.q += z.cats[c].q; t.pf += z.cats[c].pf; } }); }); }); return t; }
   function fazNomes() { var v = []; ((S.draft && S.draft.roms) || []).forEach(function (r) { (r.fazs || []).forEach(function (z) { if (v.indexOf(z.nome) < 0) v.push(z.nome); }); }); return v; }
+  /* Preço médio ponderado quando duas categorias (preços diferentes) viram um lote só. */
+  function pMed(pa, wa, pb, wb) { if (!(pa > 0)) return pb > 0 ? pb : 0; if (!(pb > 0)) return pa; var w = wa + wb; return w > 0 ? Math.round((pa * wa + pb * wb) / w * 100) / 100 : pa; }
+  function espG(x) { var t = 0; (x.grupos || []).forEach(function (z) { t += z.pf * (+z.rend || 0) / 100; }); return t || x.pf || 0; }
   function lotsFromCats(g, cats, faz) {
     var out = [];
     /* Fêmeas ficam juntas no abate: vaca + novilha viram um lote só (categorias Vaca e Novilha marcadas). */
@@ -1314,7 +1319,7 @@ input[type="date"] { flex: 1 1 0; }
       var gm = {}, ordem = [];
       V.grupos.concat(N.grupos).forEach(function (z) { var kk = String(z.rend); if (!gm[kk]) { gm[kk] = { q: 0, pf: 0, rend: z.rend }; ordem.push(kk); } gm[kk].q += z.q; gm[kk].pf += z.pf; });
       cats = Object.assign({}, cats); delete cats.novilha;
-      cats.vaca = Object.assign({}, V, { q: V.q + N.q, grupos: ordem.map(function (kk) { return gm[kk]; }), preco: V.preco > 0 ? V.preco : N.preco });
+      cats.vaca = Object.assign({}, V, { q: V.q + N.q, grupos: ordem.map(function (kk) { return gm[kk]; }), preco: pMed(V.preco, espG(V), N.preco, espG(N)) });
     }
     CATN.forEach(function (k) {
       var x = cats[k]; if (!x || !(x.q > 0) || !x.grupos || !x.grupos.length) return;
@@ -1340,7 +1345,7 @@ input[type="date"] { flex: 1 1 0; }
         var A = porNome[kn].cats;
         Object.keys(z.cats).forEach(function (k) {
           var x = z.cats[k], a = A[k] || (A[k] = { q: 0, pf: 0, pct: [], grupos: [], preco: 0 });
-          a.q += x.q; a.pf += x.pf; if (!(a.preco > 0) && x.preco > 0) a.preco = x.preco;
+          a.q += x.q; a.pf += x.pf; a.preco = pMed(a.preco, a._e || 0, x.preco, espG(x)); a._e = (a._e || 0) + espG(x);
           (x.grupos || []).forEach(function (gr) { var h = a.grupos.filter(function (y) { return String(y.rend) === String(gr.rend); })[0]; if (!h) a.grupos.push(h = { q: 0, pf: 0, rend: gr.rend }); h.q += gr.q; h.pf += gr.pf; });
         });
       });
