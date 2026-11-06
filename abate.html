@@ -471,11 +471,10 @@ input[type="date"] { flex: 1 1 0; }
     k.quebraPct = k.quebra != null ? k.quebra / pf * 100 : null;
     k.quebraCab = k.quebra != null && q ? k.quebra / q : null;
     k.esp = parts ? esp0 : (pf && rend ? pf * rend / 100 : null);
-    /* Bezerro na vaca: o feto pesa na balança da fazenda e não vira carcaça. Desconta o peso médio (pequeno 1 · médio 9 · grande 28 kg) do peso na fazenda antes do rendimento. */
+    /* Bezerro na vaca: peso médio do feto (pequeno 1 · médio 9 · grande 28 kg). É só informação da quebra por bezerros, não entra na conta. */
     var bzG = num(l.bez && l.bez.g) || 0, bzM = num(l.bez && l.bez.m) || 0, bzP = num(l.bez && l.bez.p) || 0;
     k.bezKg = l.cat === 'vaca' ? bzG * 28 + bzM * 9 + bzP * 1 : 0;
-    k.espBruto = k.esp;
-    if (k.esp != null && k.bezKg > 0 && pf && k.bezKg < pf) k.esp = k.esp * (pf - k.bezKg) / pf; else k.bezKg = 0;
+    k.bezMed = k.bezKg > 0 && q ? k.bezKg / q : null; /* só informação: não altera peso nem esperado */
     k.difKg = k.esp != null && pc ? pc - k.esp : null;
     k.difPts = k.pctFaz != null && rend ? k.pctFaz - rend : null;
     k.espMed = k.esp != null && q ? k.esp / q : null;
@@ -522,7 +521,7 @@ input[type="date"] { flex: 1 1 0; }
     if (l.cat === 'vaca') {
       var g = num(l.bez.g), m = num(l.bez.m), p = num(l.bez.p);
       if (g || m || p) {
-        L.push('Bezerros' + (k.bezKg ? ' (desconto de ' + f0(k.bezKg) + ' kg no peso da fazenda)' : ''));
+        L.push('Bezerros' + (k.bezKg ? ': ' + f0(k.bezKg) + ' kg = quebra de ' + f2(k.bezMed) + ' kg/cab por bezerros' : ''));
         if (g) L.push(g + (g === 1 ? ' grande' : ' grandes'));
         if (m) L.push(m + (m === 1 ? ' médio' : ' médios'));
         if (p) L.push(p + (p === 1 ? ' pequeno' : ' pequenos'));
@@ -903,8 +902,7 @@ input[type="date"] { flex: 1 1 0; }
     var b1 = '', b2 = '', b3 = '';
     if (k.pfMed != null) b1 += bub('Média na fazenda', f2(k.pfMed) + ' kg', f0(k.pf) + ' ÷ ' + k.q + ' cabeças');
     if (k.parts) k.parts.forEach(function (p, n) { if (p.pf && p.rend) b1 += bub('Parte ' + (n + 1) + ' · ' + (p.q || '?') + ' cab', f2(p.pf * p.rend / 100) + ' kg', f0(p.pf) + ' × ' + f2(p.rend) + '% = ' + f2(p.pf * p.rend / 100)); });
-    if (k.bezKg > 0 && k.espBruto != null) b1 += bub('Desconto dos bezerros', '− ' + f0(k.bezKg) + ' kg', 'feto no peso da fazenda (grande 28 · médio 9 · pequeno 1 kg)');
-    if (k.esp != null) b1 += bub(k.parts ? 'Peso esperado (soma das partes)' : 'Peso esperado', f2(k.esp) + ' kg', (k.parts ? k.parts.map(function (p) { return f2(p.pf * p.rend / 100); }).join(' + ') : f0(k.pf) + ' × ' + f2(k.rend) + '%') + (k.bezKg > 0 ? ' · com desconto dos bezerros' : ''));
+    if (k.esp != null) b1 += bub(k.parts ? 'Peso esperado (soma das partes)' : 'Peso esperado', f2(k.esp) + ' kg', (k.parts ? k.parts.map(function (p) { return f2(p.pf * p.rend / 100); }).join(' + ') : f0(k.pf) + ' × ' + f2(k.rend) + '%'));
     if (k.espMed != null) b1 += bub('Esperado por cabeça', f2(k.espMed) + ' kg', f2(k.esp) + ' ÷ ' + k.q + ' cabeças', 'key');
     if (!b1) b1 = '<p class="hint">Preencha quantidade, peso da fazenda e rendimento para ver o esperado.</p>';
 
@@ -935,6 +933,7 @@ input[type="date"] { flex: 1 1 0; }
     } else if (k.pc) {
       b3 += bub('Resultado', '—', 'Informe o rendimento esperado no bloco 1');
     }
+    if (k.bezMed != null) b3 += bub('Quebra por bezerros', f2(k.bezMed) + ' kg/cab', f0(k.bezKg) + ' kg de feto ÷ ' + k.q + ' cabeças · só informação');
     if (k.pctFaz != null) b3 += bub('% Fazenda', f2(k.pctFaz) + '%', 'carcaça ÷ fazenda');
     if (k.pctFrig != null) b3 += bub('% Frigorífico', f2(k.pctFrig) + '%', 'carcaça ÷ entrada');
     if (k.lemPrec && k.pctPrec != null) {
