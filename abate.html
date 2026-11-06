@@ -390,6 +390,9 @@ input[type="date"] { flex: 1 1 0; }
   function fmtN(n, min, max) { return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: min, maximumFractionDigits: max }).format(n); }
   var f0 = function (n) { return fmtN(n, 0, 2); };
   var f2 = function (n) { return fmtN(n, 2, 2); };
+  var f3 = function (n) { return fmtN(n, 3, 3); };
+  var MSGMODE = 'curta';
+  try { MSGMODE = localStorage.getItem('abate.msgmode') === 'longa' ? 'longa' : 'curta'; } catch (e) {}
   var f1 = function (n) { return fmtN(n, 1, 1); };
   var p0 = function (n) { return fmtN(n, 0, 0); };
   function signed(n, fn) { return (n > 0 ? '+' : n < 0 ? '−' : '') + fn(Math.abs(n)); }
@@ -496,7 +499,39 @@ input[type="date"] { flex: 1 1 0; }
   }
 
   /* ---------- mensagem do WhatsApp ---------- */
+  function bezLines(l, k, L) {
+    if (l.cat !== 'vaca') return;
+    var g = num(l.bez.g), m = num(l.bez.m), p = num(l.bez.p);
+    if (!(g || m || p)) return;
+    if (MSGMODE === 'curta') L.push('');
+    L.push('Bezerros' + (k.bezMed != null ? ': *' + f3(k.bezMed) + ' kg quebra/média*' : ''));
+    if (g) L.push(g + (g === 1 ? ' grande' : ' grandes'));
+    if (m) L.push(m + (m === 1 ? ' médio' : ' médios'));
+    if (p) L.push(p + (p === 1 ? ' pequeno' : ' pequenos'));
+  }
+  /* Mensagem curta: só o que o escritório confere. */
+  function lotLinesCurta(r, l) {
+    var k = calc(l), cat = CATS[l.cat], L = [];
+    var nome = (r.pecuarista || '').trim() || 'Pecuarista';
+    L.push(nome + (l.faz ? ' (' + l.faz + ')' : '') + (k.q ? ' – ' + k.q + ' ' + (k.q === 1 ? cat[0] : cat[1]) : ''));
+    L.push('');
+    if (k.pf && k.q) L.push('Peso Fazenda: ' + f0(k.pf) + '/' + k.q + ' = *' + f2(k.pfMed) + '*');
+    if (k.pe && k.q) L.push('Peso Entrada: ' + f0(k.pe) + '/' + k.q + ' = ' + f2(k.peMed) + (k.quebraPct != null ? ' (quebra de ' + f2(k.quebraPct) + '% do peso da fazenda)' : ''));
+    L.push('');
+    if (k.espMed != null) L.push('Média Fazenda: ' + f2(k.espMed) + ' kg');
+    if (k.pcMed != null) L.push('Peso frigorífico *' + f2(k.pcMed) + '*');
+    if (k.pctFrig != null) L.push('% Frigorífico: ' + f2(k.pctFrig) + '%');
+    if (k.difMed != null) {
+      var dm = Math.round(k.difMed * 100) / 100;
+      L.push('Resultado: *' + (dm > 0 ? 'Lucro ' : dm < 0 ? 'Prejuízo ' : 'Sem diferença ') + (dm !== 0 ? signed(dm, f2) + ' kg/cab' : '0,00 kg/cab') + '*');
+    }
+    if (k.si != null && k.sf != null) L.push('Sequência: ' + k.si + ' a ' + k.sf);
+    if (l.lem && l.lem.prec && k.pctPrec != null) L.push('Precoce: ' + k.prec + ' de ' + k.q + ' = ' + f2(k.pctPrec) + '%' + (k.isPrec ? ' (precoce)' : ' (não é precoce)'));
+    bezLines(l, k, L);
+    return L;
+  }
   function lotLines(r, l) {
+    if (MSGMODE === 'curta') return lotLinesCurta(r, l);
     var k = calc(l), cat = CATS[l.cat], L = [];
     var nome = (r.pecuarista || '').trim() || 'Pecuarista';
     L.push(nome + (l.faz ? ' (' + l.faz + ')' : '') + (k.q ? ' – ' + k.q + ' ' + (k.q === 1 ? cat[0] : cat[1]) : ''));
@@ -518,15 +553,7 @@ input[type="date"] { flex: 1 1 0; }
     if (l.lem && l.lem.prec && k.pctPrec != null) {
       L.push('Precoce: ' + k.prec + ' de ' + k.q + ' = ' + f2(k.pctPrec) + '%' + (k.isPrec ? ' (precoce)' : ' (não é precoce)'));
     }
-    if (l.cat === 'vaca') {
-      var g = num(l.bez.g), m = num(l.bez.m), p = num(l.bez.p);
-      if (g || m || p) {
-        L.push('Bezerros' + (k.bezKg ? ': ' + f0(k.bezKg) + ' kg = quebra de ' + f2(k.bezMed) + ' kg/cab por bezerros' : ''));
-        if (g) L.push(g + (g === 1 ? ' grande' : ' grandes'));
-        if (m) L.push(m + (m === 1 ? ' médio' : ' médios'));
-        if (p) L.push(p + (p === 1 ? ' pequeno' : ' pequenos'));
-      }
-    }
+    bezLines(l, k, L);
     return L;
   }
   /* Resultado do lote: carcaças reais menos o esperado (peso da fazenda x rendimento esperado). */
@@ -545,6 +572,17 @@ input[type="date"] { flex: 1 1 0; }
     ks.forEach(function (k, i) { q += k.q; pf += k.pf || 0; pe += k.pe || 0; pc += k.pc; if (k.esp == null) espOk = false; else esp += k.esp; var pr = precoCalc(ls[i]); if (pr.vc == null || pr.vv == null) fin = false; else { vc += pr.vc; vv += pr.vv; } });
     var nome = (r.pecuarista || '').trim() || 'Pecuarista', c = CATS[cat], L = [];
     L.push('*TOTAL* ' + nome + ' – ' + q + ' ' + (q === 1 ? c[0] : c[1]));
+    if (MSGMODE === 'curta') {
+      L.push('');
+      if (pf) L.push('Peso Fazenda: ' + f0(pf) + '/' + q + ' = *' + f2(pf / q) + '*');
+      if (pe) L.push('Peso Entrada: ' + f0(pe) + '/' + q + ' = ' + f2(pe / q) + (pf ? ' (quebra de ' + f2((pf - pe) / pf * 100) + '% do peso da fazenda)' : ''));
+      L.push('');
+      if (espOk) L.push('Média Fazenda: ' + f2(esp / q) + ' kg');
+      L.push('Peso frigorífico *' + f2(pc / q) + '*');
+      if (pe) L.push('% Frigorífico: ' + f2(pc / pe * 100) + '%');
+      if (espOk) { var dk0 = pc - esp, dm0 = Math.round(dk0 / q * 100) / 100; L.push('Resultado: *' + (dm0 > 0 ? 'Lucro ' : dm0 < 0 ? 'Prejuízo ' : 'Sem diferença ') + (dm0 !== 0 ? signed(dm0, f2) + ' kg/cab' : '0,00 kg/cab') + '*'); }
+      return L;
+    }
     if (pe) L.push('Peso Entrada: ' + f0(pe) + '/' + q + ' = ' + f2(pe / q));
     if (pf) L.push('Peso Fazenda: ' + f0(pf) + '/' + q + ' = *' + f2(pf / q) + '*');
     if (espOk && pf) L.push('Rendimento esperado: ' + f2(esp / pf * 100) + '% = ' + f2(esp / q) + ' por cabeça');
@@ -888,7 +926,7 @@ input[type="date"] { flex: 1 1 0; }
       D.lotes.map(function (l, i) { return lotHTML(l, i, D.lotes.length); }).join('') +
       '<button type="button" class="btn" data-act="add-lot">+ Adicionar lote</button>' +
       '<div class="cartao"><label class="f"><span>Observação (sai no fim da mensagem)</span><input id="obs" data-f="obs" autocomplete="off" value="' + esc(D.obs) + '"></label>' +
-      '<h4 class="rot">Mensagem para o WhatsApp</h4><pre id="msg"></pre></div>' +
+      '<h4 class="rot">Mensagem para o WhatsApp</h4><div class="actions" id="mm"><button type="button" class="btn grow' + (MSGMODE === 'curta' ? ' primary' : '') + '" data-act="msgmode" data-v="curta">Curta</button><button type="button" class="btn grow' + (MSGMODE === 'longa' ? ' primary' : '') + '" data-act="msgmode" data-v="longa">Longa</button></div><pre id="msg"></pre></div>' +
       '<div class="actions"><button type="button" class="btn primary grow" data-act="copy">Copiar mensagem</button><a class="btn wa" id="wa" target="_blank" rel="noopener">Abrir WhatsApp</a></div>';
     updateComputed();
     updateSug();
@@ -1241,6 +1279,7 @@ input[type="date"] { flex: 1 1 0; }
       else if (a === 'pc-switch') { var ll = S.draft.lotes[+b.dataset.l]; ll.pcm = ll.pcm === 'media' ? 'total' : 'media'; touched(); renderEditor(); }
       else if (a === 'rom-open') romModal();
       else if (a === 'rom-avg') { var lr = S.draft.lotes[+b.dataset.l], RR = lr.src && lr.src.faz ? romSexF(lr.src.faz, SEXO[lr.cat]) : romSex(SEXO[lr.cat]), qq = num(lr.qtd); if (RR.q && qq != null && !lr.partes.length) { lr.pf = fmtN(Math.round(qq * RR.pf / RR.q * 100) / 100, 0, 2); touched(); renderEditor(); toast('Peso ajustado pela média do romaneio'); } }
+      else if (a === 'msgmode') { MSGMODE = b.dataset.v === 'longa' ? 'longa' : 'curta'; try { localStorage.setItem('abate.msgmode', MSGMODE); } catch (e) {} renderEditor(); }
       else if (a === 'copy') copyMsg();
       else if (a === 'del') arm(b, 'Toque de novo para excluir', deleteRec);
     });
