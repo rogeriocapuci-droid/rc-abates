@@ -1,6 +1,6 @@
 # Manual do App Abate (Fechamento de Abate)
 
-Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 29, 29/10/2026.
+Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 30, 06/11/2026. Atenção: hoje o app é um conjunto (`index.html` com as abas, `abate.html` = aba Abate, `embarques.html` = aba Embarque); as telas do abate ficam no `abate.html`.
 
 ## 1. O que tem nesta pasta
 
@@ -91,6 +91,7 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 
 ## 9. Histórico de versões
 
+- **v30:** vaca e novilha no mesmo lote (botões Vaca e Novilha marcados juntos; no romaneio, as fêmeas da mesma fazenda já vêm num lote só, e dá para marcar/desmarcar à mão; a mensagem diz "21 vacas e novilhas"); bloco 2 com Peso de entrada, Seq. início e Seq. fim na mesma linha; bloco 4 com preço da fazenda e do frigorífico na mesma linha; espaços entre linhas, blocos e quadros reduzidos (cerca de 20%) para rolar menos a tela.
 - **v29:** bloco 1 mostra só Média na fazenda e Esperado por cabeça; "Adiantar pagamento" com letra 15% menor; campo Peso do frigorífico em destaque (fundo e borda âmbar); linha ——— separando os lotes do mesmo pecuarista na mensagem.
 - **v28:** mensagem do WhatsApp no novo formato (título em negrito, blocos separados por linha em branco), sem sequência, peso de entrada e % Frigorífico.
 - **v27:** Zanchetta com peso vivo: o desconto de 1,5% sai do nosso lucro e o app mostra o lucro após o desconto.
