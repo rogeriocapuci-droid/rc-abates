@@ -786,7 +786,7 @@ function calc(l, fazId) {
 }
 //#LOGIC-END
 
-const APP_VERSAO = 'v24';
+const APP_VERSAO = 'v25';
 const nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const nf2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1340,8 +1340,8 @@ function buildPdfN(l, lvl, modo) {
   }
   let lpages = 0;
   function pesosPdf(g) {
-    const LW = 297, LH = 210, NC = 10, labW = 7, rh = 6.6;
-    const colW = (LW - 2 * M - labW) / NC;
+    const LW = 210, NC = 9, labW = 6, rh = 7.4, MG = 8;
+    const colW = (LW - 2 * MG - labW) / NC;
     const cols = [];
     l.folhas.forEach(f => {
       const cells = f.cells.filter(c => !g || ((c.fz || f.faz) === g && !c.skip));
@@ -1357,20 +1357,20 @@ function buildPdfN(l, lvl, modo) {
     const nPg = Math.ceil(cols.length / NC);
     let acum = 0, acumCab = 0;
     for (let pg = 0; pg < nPg; pg++) {
-      doc.addPage('a4', 'landscape'); lpages++;
+      doc.addPage(); lpages++;
       const part = cols.slice(pg * NC, pg * NC + NC);
-      let y = M;
+      let y = MG;
       doc.setTextColor(...GREEN); doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
-      doc.text('ROMANEIO DE PESO' + (g ? ' · ' + fazNome(l, g) : ''), M, y + 5);
+      doc.text('ROMANEIO DE PESO' + (g ? ' · ' + fazNome(l, g) : ''), MG, y + 5);
       doc.setFontSize(8.5); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal');
-      doc.text('Página ' + (pg + 1) + ' de ' + nPg, LW - M, y + 5, { align: 'right' });
+      doc.text('Página ' + (pg + 1) + ' de ' + nPg, LW - MG, y + 5, { align: 'right' });
       doc.setTextColor(...INK); doc.setFontSize(9);
-      doc.text('Data: ' + fmtDate(l.data) + '   ·   Pecuarista: ' + (l.pecuarista || '') + '   ·   Comprador: ' + (l.comprador || ''), M, y + 11);
+      doc.text('Data: ' + fmtDate(l.data) + '   ·   Pecuarista: ' + (l.pecuarista || '') + '   ·   Comprador: ' + (l.comprador || ''), MG, y + 11);
       y += 15;
       const hh = 9;
       doc.setDrawColor(150, 160, 152); doc.setLineWidth(0.2);
       part.forEach((co, i) => {
-        const x = M + labW + i * colW;
+        const x = MG + labW + i * colW;
         doc.setFillColor(232, 240, 234); doc.rect(x, y, colW, hh, 'FD');
         doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...GREEN);
         const ln = doc.splitTextToSize(co.faz, colW - 2).slice(0, 2);
@@ -1379,18 +1379,20 @@ function buildPdfN(l, lvl, modo) {
       y += hh;
       for (let r = 0; r < 20; r++) {
         const yy = y + r * rh;
-        doc.setFontSize(7); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal'); doc.text(String(r + 1), M + 2, yy + rh * 0.7);
+        doc.setFontSize(7); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal'); doc.text(String(r + 1), MG + 1.2, yy + rh * 0.7);
         for (let i = 0; i < NC; i++) {
-          const x = M + labW + i * colW;
+          const x = MG + labW + i * colW;
           doc.rect(x, yy, colW, rh);
           const co = part[i]; const cell = co && co.cs[r];
           if (cell && !cell.skip) {
             doc.setFillColor(...hexRgb(CAT_HEX[cell.cat])); doc.rect(x, yy, 1.8, rh, 'F');
             doc.setTextColor(...INK); doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
-            doc.text(String(cell.w), x + colW - 1.5, yy + rh * 0.72, { align: 'right' });
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(6.3); doc.setTextColor(...MUTE);
+            doc.setFontSize(10);
+            const ws = String(cell.w), wW = doc.getTextWidth(ws);
+            doc.text(ws, x + colW - 1.2, yy + rh * 0.7, { align: 'right' });
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(...MUTE);
             const tag = (l.cats[cell.cat].nome || l.cats[cell.cat].sigla) + (cell.n > 1 ? ' x' + cell.n : '') + (cell.flag ? ' *' : '');
-            doc.text(tag, x + 3, yy + rh * 0.68, { maxWidth: colW - 13 });
+            doc.text(tag, x + colW - 1.2 - wW - 1, yy + rh * 0.68, { align: 'right', maxWidth: colW - wW - 4.5 });
           }
         }
       }
@@ -1399,16 +1401,16 @@ function buildPdfN(l, lvl, modo) {
       let tot = 0, cab = 0;
       part.forEach((co, i) => {
         const s = co.cs.reduce((a, x) => a + (x && !x.skip ? x.w : 0), 0); tot += s; cab += co.cs.reduce((a, x) => a + (x && !x.skip ? x.n : 0), 0);
-        const x = M + labW + i * colW;
+        const x = MG + labW + i * colW;
         doc.setFillColor(245, 247, 245); doc.rect(x, ys, colW, rh, 'FD');
         if (s) doc.text(nf0.format(s), x + colW - 1.5, ys + rh * 0.72, { align: 'right' });
       });
       acum += tot; acumCab += cab;
       doc.setFontSize(9);
-      doc.text('Total da página: ' + nf0.format(tot) + ' kg · ' + nf0.format(cab) + ' cab' + (nPg > 1 ? '   |   Acumulado: ' + nf0.format(acum) + ' kg · ' + nf0.format(acumCab) + ' cab' : ''), LW - M, ys + rh + 5, { align: 'right' });
+      doc.text('Total da página: ' + nf0.format(tot) + ' kg · ' + nf0.format(cab) + ' cab' + (nPg > 1 ? '   |   Acumulado: ' + nf0.format(acum) + ' kg · ' + nf0.format(acumCab) + ' cab' : ''), LW - MG, ys + rh + 5, { align: 'right' });
       const used = CATS.filter(k => part.some(co => co.cs.some(c => c && !c.skip && c.cat === k)));
-      let px = M; doc.setFontSize(7.5);
-      used.forEach(k => { doc.setFillColor(...hexRgb(CAT_HEX[k])); doc.rect(px, ys + rh + 2.6, 3, 3, 'F'); doc.setFont('helvetica', 'normal'); doc.text(l.cats[k].nome, px + 4, ys + rh + 5); px += 8 + doc.getTextWidth(l.cats[k].nome) + 3; });
+      let px = MG; doc.setFontSize(7.5);
+      used.forEach(k => { doc.setFillColor(...hexRgb(CAT_HEX[k])); doc.rect(px, ys + rh + 8.6, 3, 3, 'F'); doc.setFont('helvetica', 'normal'); doc.text(l.cats[k].nome, px + 4, ys + rh + 11); px += 8 + doc.getTextWidth(l.cats[k].nome) + 3; });
     }
   }
   function pesoPdf(c, y, titulo) {
