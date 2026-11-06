@@ -75,7 +75,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .btn.sq { width: 50px; padding: 0; font-size: 24px; }
 .btn.grow { flex: 1 1 auto; }
 .btn.wa { border-color: var(--accent-text); color: var(--accent-text); }
-.link { background: none; border: 0; padding: 9px 3px; min-height: 44px; color: var(--accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.link { background: none; border: 0; padding: 9px 3px; min-height: 36px; color: var(--accent-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .link.danger { color: var(--bad); }
 .armed { color: var(--bad) !important; font-weight: 700; }
 input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0 10px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); font-size: 17px; font-weight: 500; }
@@ -166,14 +166,14 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .f > span { font-size: 13px; font-weight: 600; color: var(--ink-2); }
 .f input {
-  width: 100%; min-height: 44px; padding: 0 12px; font-size: 18px; border-radius: 12px; border: 1.5px solid var(--line);
+  width: 100%; min-height: 40px; padding: 0 12px; font-size: 18px; border-radius: 12px; border: 1.5px solid var(--line);
   background: var(--surface-2); color: var(--ink); font-variant-numeric: tabular-nums;
 }
 .f input:focus { outline: 2px solid var(--accent-text); outline-offset: 1px; background: var(--surface); }
 .f input::placeholder { color: var(--ink-2); opacity: .6; }
 .grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.row3e { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: end; }
+.row3e { display: grid; grid-template-columns: 108px 78px 78px; gap: 8px; align-items: end; justify-content: start; }
 .row3e .f > span { line-height: 1.2; }
 .row3e .f input { padding-inline: 9px; }
 .row3e .c input { text-align: center; }
@@ -197,8 +197,8 @@ input[type="date"] { flex: 1 1 150px; min-width: 0; min-height: 50px; padding: 0
 .sugscroll .vazio { padding: 12px; font-size: 14px; color: var(--ink-2); }
 
 /* lembretes do abate */
-.cur3 { display: flex; align-items: center; gap: 9px; }
-.cur3 input { width: 56px; min-height: 44px; padding: 0 7px; text-align: center; font-size: 20px; font-weight: 600; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); font-variant-numeric: tabular-nums; }
+.cur3 { display: flex; align-items: center; gap: 7px; }
+.cur3 input { width: 48px; min-height: 40px; padding: 0 7px; text-align: center; font-size: 20px; font-weight: 600; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); font-variant-numeric: tabular-nums; }
 .cur3 input:focus { outline: 2px solid var(--accent-text); outline-offset: 1px; background: var(--surface); }
 .row3 { display: grid; grid-template-columns: 84px minmax(0, 1fr) 104px; gap: 8px; align-items: end; }
 .row3 .f > span { line-height: 1.2; }

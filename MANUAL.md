@@ -1,6 +1,6 @@
 # Manual do App Abate (Fechamento de Abate)
 
-Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 32, 06/11/2026. Atenção: hoje o app é um conjunto (`index.html` com as abas, `abate.html` = aba Abate, `embarques.html` = aba Embarque); as telas do abate ficam no `abate.html`.
+Este manual fica na pasta do app e deve ser mantido atualizado a cada mudança. Última atualização: versão 33, 06/11/2026. Atenção: hoje o app é um conjunto (`index.html` com as abas, `abate.html` = aba Abate, `embarques.html` = aba Embarque); as telas do abate ficam no `abate.html`.
 
 ## 1. O que tem nesta pasta
 
@@ -91,6 +91,7 @@ Depois de cada mudança, atualize a seção 9 (histórico).
 
 ## 9. Histórico de versões
 
+- **v33:** campos do bloco 2 compactos (Peso entrada 108 px, sequências 78 px, lado a lado e alinhados à esquerda); campos e links um pouco mais baixos em todo o app.
 - **v32:** botão **Juntar vaca + novilha** no cabeçalho do lote (aparece quando há lote de vaca e de novilha da mesma fazenda): soma cabeças, pesos e carcaça e mantém os rendimentos como partes. Serve para lançamentos que já tinham sido trazidos separados.
 - **v31:** Peso de entrada limitado a 5 dígitos e sequência a 4 dígitos; ao trazer o romaneio, fazendas com o mesmo nome viram um lote só (lote separado só quando o nome da fazenda muda), com vaca + novilha juntas.
 - **v30:** vaca e novilha no mesmo lote (botões Vaca e Novilha marcados juntos; no romaneio, as fêmeas da mesma fazenda já vêm num lote só, e dá para marcar/desmarcar à mão; a mensagem diz "21 vacas e novilhas"); bloco 2 com Peso de entrada, Seq. início e Seq. fim na mesma linha; bloco 4 com preço da fazenda e do frigorífico na mesma linha; espaços entre linhas, blocos e quadros reduzidos (cerca de 20%) para rolar menos a tela.
